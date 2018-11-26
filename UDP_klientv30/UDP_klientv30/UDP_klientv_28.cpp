@@ -2,35 +2,29 @@
 //
 #pragma warning(disable:4996)
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include "protokol.h"
+#include "Protocol.h"
 #include <winsock2.h>
 #include <iostream>
 #include <string>
 #include <regex>
 // Link with ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
-
 bool check_OP(char ch) {
 	if (ch == 'd')
 		return true;
 }
+
+
 int main()
-{	
+{
 	system("chcp 1250");
 	char wybor;
-	protokol d;
-	time_t rawtime;
-	time(&rawtime);
+
 
 	//d.timeinfo = localtime(&rawtime);
 	//printf("Current local time and date: %s", asctime(d.timeinfo));//asc to do stringa daje 
 	std::string temp;
-	d.time = (long int )rawtime;
-	d.liczba1 = 32;
-	d.liczba2 = 88;
-	d.ST = 'p';
-	d.NS=0;
-	d.ID = 0;
+
 	//temp = std::to_string(d.liczba1);
 	int iResult;
 	WSADATA wsaData;
@@ -43,30 +37,28 @@ int main()
 	int SenderAddrSize = sizeof(SenderAddr);
 	unsigned short Port = 27015;
 	unsigned short Port2 = 27014;
-	
+
 	char SendBuf[1024];
 	char RecvBuf[1024];
-	
+
 	std::cout << sizeof(long int) << std::endl;;
 	int BufLen = 1024;
 	int RBufLen = 1024;
+
+	time_t rawtime;
+	time(&rawtime);
+	TextProtocol d('p', 32, 88, 0, 0, rawtime);
+
 	std::cout << d.time << std::endl;
 	std::cout << rawtime << std::endl;
-	temp = nagtime;
-	temp.append( std::to_string(d.time));
-	temp.append(nagST);
-	temp.append(std::string(1,d.ST));
-	temp.append(nagNS);
-	temp.append(std::to_string(d.NS));
-	temp.append(nagID);
-	temp.append(std::to_string(d.ID));
-	strcpy_s(SendBuf, temp.c_str());
+
+	strcpy_s(SendBuf, d.to_string(PROT_ID).c_str());
 
 	//----------------------
 	// Initialize Winsock
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != NO_ERROR) {
-		wprintf(L"WSAStartup failed with error: %d\n", iResult);
+		std::cout << "WSAStartup failed with error: " << iResult << "\n";
 		return 1;
 	}
 
@@ -74,7 +66,7 @@ int main()
 	// Create a socket for sending data
 	SendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (SendSocket == INVALID_SOCKET) {
-		wprintf(L"socket failed with error: %ld\n", WSAGetLastError());
+		std::cout << "socket failed with error: " << WSAGetLastError() << "\n";
 		WSACleanup();
 		return 1;
 	}
@@ -89,7 +81,7 @@ int main()
 	// Create a receiver socket to receive datagrams
 	RecvSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (RecvSocket == INVALID_SOCKET) {
-		wprintf(L"socket failed with error %d\n", WSAGetLastError());
+		std::cout << "socket failed with error " << WSAGetLastError() << "\n";
 		return 1;
 	}
 	//-----------------------------------------------
@@ -102,31 +94,31 @@ int main()
 
 	//---------------------------------------------
 	// Send a datagram to the receiver
-	wprintf(L"Nazwizywanie polaczenie\n");
+	std::cout << "Nazwiązywanie połączenia...\n";
 
 	iResult = sendto(SendSocket,
 		SendBuf, BufLen, 0, (SOCKADDR *)& RecvAddr, sizeof(RecvAddr));//time||ST||NS||ID
 	if (iResult == SOCKET_ERROR) {
-		wprintf(L"sendto failed with error: %d\n", WSAGetLastError());
+		std::cout << "sendto failed with error: " << WSAGetLastError() << "\n";
 		closesocket(SendSocket);
 		WSACleanup();
 		return 1;
 	}
 	//---------------------------------------------
 
-	iResult=bind(RecvSocket, (SOCKADDR *)& RecvAddr2, sizeof(RecvAddr));
+	iResult = bind(RecvSocket, (SOCKADDR *)& RecvAddr2, sizeof(RecvAddr));
 	if (iResult != 0) {
-		wprintf(L"bind failed with error %d\n", WSAGetLastError());
+		std::cout << "bind failed with error " << WSAGetLastError() << "\n";
 		return 1;
 	}
-	iResult=recvfrom(RecvSocket, RecvBuf, BufLen, 0, (SOCKADDR *)& RecvAddr2, &SenderAddrSize);
+	iResult = recvfrom(RecvSocket, RecvBuf, BufLen, 0, (SOCKADDR *)& RecvAddr2, &SenderAddrSize);
 	if (iResult == SOCKET_ERROR) {
-		wprintf(L"recvfrom failed with error %d\n", WSAGetLastError());
+		std::cout << "recvfrom failed with error " << WSAGetLastError() << "\n";
 	}
 
 
-	std::cout << "wiadomowsc zwrotna " << RecvBuf << std::endl;
-	std::cout <<"string" <<(std::string) RecvBuf << std::endl;;
+	std::cout << "Wiadomowść zwrotna " << RecvBuf << std::endl;
+	std::cout << "String: " << (std::string) RecvBuf << std::endl;;
 	std::string match = "Identyfikator: ";
 	std::size_t found = (((std::string) RecvBuf).find(match));
 	d.ID = stoi(((std::string) RecvBuf).substr(found + 15));
@@ -137,60 +129,60 @@ int main()
 			std::cout << "wybierz opcje protokołu: " << std::endl << "jesli chcesz rozłoczyć wyslij r" << std::endl << " jesli chcesz cos obliczycyć wyslij o" << std::endl << "jesli chcesz zobaczyc historie wyslij h" << std::endl;
 			std::cin >> wybor;
 		} while (wybor != 'r');
-		if (wybor == 'r'||wybor=='h'||wybor=='o') {
+		if (wybor == 'r' || wybor == 'h' || wybor == 'o') {
 			time(&rawtime);
 			d.time = (long int)rawtime;
-			temp = nagtime;
+			temp = HEAD_TIME;
 			temp.append(std::to_string(d.time));
-			temp.append(nagST);
+			temp.append(HEAD_ST);
 			temp.append(std::string(1, 'r'));
-			temp.append(nagNS);
+			temp.append(HEAD_SN);
 			temp.append(std::to_string(0));
-			temp.append(nagID);
+			temp.append(HEAD_ID);
 			temp.append(std::to_string(d.ID));
 			strcpy_s(SendBuf, temp.c_str());
 			std::cout << SendBuf << std::endl;
 			iResult = sendto(SendSocket,
 				SendBuf, BufLen, 0, (SOCKADDR *)& RecvAddr, sizeof(RecvAddr));//time||ST||NS||ID
 			if (iResult == SOCKET_ERROR) {
-				wprintf(L"sendto failed with error: %d\n", WSAGetLastError());
+				std::cout << "sendto failed with error: " << WSAGetLastError() << "\n";
 				closesocket(SendSocket);
 				WSACleanup();
 				return 1;
 			}
 
-			
+
 
 		}
 		else if (wybor == 'o') {
-		
-		
-		
+
+
+
 			break;
 		}
 		else if (wybor == 'h') {
-		
+
 			break;
-		
+
 		}
-	
-	
-	
+
+
+
 	}
 
 
 
 	// When the application is finished sending, close the socket.
-	wprintf(L"Finished sending. Closing socket.\n");
+	std::cout << "Skończono wysyłanie. Zamykanie gniazdka...\n";
 	iResult = closesocket(SendSocket);
 	if (iResult == SOCKET_ERROR) {
-		wprintf(L"closesocket failed with error: %d\n", WSAGetLastError());
+		std::cout << "closesocket failed with error: " << WSAGetLastError() << "\n";
 		WSACleanup();
 		return 1;
 	}
 	//---------------------------------------------
 	// Clean up and quit.
-	wprintf(L"Exiting.\n");
+	std::cout << "Exiting.\n";
 	WSACleanup();
 	system("PAUSE");
 	return 0;
