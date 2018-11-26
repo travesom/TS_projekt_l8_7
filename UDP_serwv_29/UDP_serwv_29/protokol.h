@@ -11,7 +11,7 @@ public:
 	protokol();
 	~protokol();
 };//jako ze 4 maks pola to status bedzie informowa³ czy w nastepnym komunikacjie bedzie 1,2 argument czy to nawiazywanie  czy konczenie po³¹czenia a ns który to komunikat
-//naziazywanie po³aczenie bedzie wygl¹da³o tak Time|ST|NS|ID gdzie identyfikator to 0 na pocz¹tek a NS liczymy  ile jescze pakitów powinno sie wys³aæ(czyli przy nawiazywaniu 0 mamy);()time ma rozmiar 4 czyli razem komunikat nawiazywania polaczenia ma rozmiar 13
+//naziazywanie po³aczenie bedzie wygl¹da³o tak Time|ST|NS|ID gdzie identyfikator to 0 na pocz¹tek a NS liczymy  ile jescze pakitów powinno sie wys³aæ(czyli przy nawiazywaniu 0 mamy);()time ma rozmiar 4 czyli razem komunikat nawiazywania polaczenia ma rozmiar 13 plus nag³ówki czyli 13+7+20+14+9= 63
 
 
-//st 'p'-po³oczenie,'o'-info o operacje,'a' argumenty,'r'-rozlaczenie;
+//st 'p'-po³oczenie,'h'-info o histori poprezdnich operacjach,'o'-operacje,'a' argumenty,'r'-rozlaczenie;

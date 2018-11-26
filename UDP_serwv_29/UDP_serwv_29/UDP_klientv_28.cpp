@@ -6,11 +6,20 @@
 #include <iostream>
 #include "protokol.h"
 #include <string>
+#include <regex>
 // Link with ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
-char nagOP[11]="operacja: ", nagST[9]="status: ", nagliczba1[13]="argument 1: ", nagliczba2[13] = "argument 2: ", nagNS[20]="Numer Sekwencyjny: ", nagID[14]="Identyfikator", nagIO[25]="Identyfikator operacji: ", nagtime[7]="czas: ";
+char nagOP[11]="operacja: ", nagST[9]="status: ", nagliczba1[13]="argument 1: ", nagliczba2[13] = "argument 2: ", nagNS[20]="Numer Sekwencyjny: ", nagID[16]="Identyfikator: ", nagIO[25]="Identyfikator operacji: ", nagtime[7]="czas: ";
+bool check_OP(char ch) {
+	if (ch == 'd')
+		return true;
+
+
+}
 int main()
-{
+{	
+	system("chcp 1250");
+	char wybor;
 	protokol d;
 	time_t rawtime;
 	time(&rawtime);
@@ -119,8 +128,59 @@ int main()
 
 
 	std::cout << "wiadomowsc zwrotna " << RecvBuf << std::endl;
+	std::cout <<"string" <<(std::string) RecvBuf << std::endl;;
+	std::string match = "Identyfikator: ";
+	std::size_t found = (((std::string) RecvBuf).find(match));
+	d.ID = stoi(((std::string) RecvBuf).substr(found + 15));
+	std::cout << d.ID << std::endl;;
+	//-----------------------wysylanie info
+	while (true) {
+		do {
+			std::cout << "wybierz opcje protokołu: " << std::endl << "jesli chcesz rozłoczyć wyslij r" << std::endl << " jesli chcesz cos obliczycyć wyslij o" << std::endl << "jesli chcesz zobaczyc historie wyslij h" << std::endl;
+			std::cin >> wybor;
+		} while (wybor != 'r');
+		if (wybor == 'r'||wybor=='h'||wybor=='o') {
+			time(&rawtime);
+			d.time = (long int)rawtime;
+			temp = nagtime;
+			temp.append(std::to_string(d.time));
+			temp.append(nagST);
+			temp.append(std::string(1, 'r'));
+			temp.append(nagNS);
+			temp.append(std::to_string(0));
+			temp.append(nagID);
+			temp.append(std::to_string(d.ID));
+			strcpy_s(SendBuf, temp.c_str());
+			std::cout << SendBuf << std::endl;
+			iResult = sendto(SendSocket,
+				SendBuf, BufLen, 0, (SOCKADDR *)& RecvAddr, sizeof(RecvAddr));//time||ST||NS||ID
+			if (iResult == SOCKET_ERROR) {
+				wprintf(L"sendto failed with error: %d\n", WSAGetLastError());
+				closesocket(SendSocket);
+				WSACleanup();
+				return 1;
+			}
+
+			
+
+		}
+		else if (wybor == 'o') {
+		
+		
+		
+			break;
+		}
+		else if (wybor == 'h') {
+		
+			break;
+		
+		}
 	
 	
+	
+	}
+
+
 
 	// When the application is finished sending, close the socket.
 	wprintf(L"Finished sending. Closing socket.\n");

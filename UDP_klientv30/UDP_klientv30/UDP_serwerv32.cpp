@@ -6,14 +6,16 @@
 #include <iostream>
 #include <stdlib.h>  
 #include <string>
+#include <regex>
 #include "protokol.h"
 
 #pragma comment(lib, "Ws2_32.lib")// Link with ws2_32.lib
-char nagOP[11] = "operacja: ", nagST[9] = "status: ", nagliczba1[13] = "argument 1: ", nagliczba2[13] = "argument 2: ", nagNS[20] = "Numer Sekwencyjny: ", nagID[14] = "Identyfikator", nagIO[25] = "Identyfikator operacji: ", nagtime[7] = "czas: ";
+char nagOP[11] = "operacja: ", nagST[9] = "status: ", nagliczba1[13] = "argument 1: ", nagliczba2[13] = "argument 2: ", nagNS[20] = "Numer Sekwencyjny: ", nagID[16] = "Identyfikator: ", nagIO[25] = "Identyfikator operacji: ", nagtime[7] = "czas: ";
 
 
 int main()
 {
+	system("chcp 1250");
 	protokol d;
 	time_t rawtime;
 	std::string temp;
@@ -83,7 +85,7 @@ int main()
 		RecvBuf, BufLen, 0, (SOCKADDR *)& SenderAddr, &SenderAddrSize);
 
 	std::cout << std::endl << "RecvBuf is: " << RecvBuf << std::endl << std::endl;
-	d.ID= rand() % 100;
+	d.ID= rand() % 100+1;
 	time(&rawtime);
 	d.time = (long int)rawtime;
 	temp = nagtime;
