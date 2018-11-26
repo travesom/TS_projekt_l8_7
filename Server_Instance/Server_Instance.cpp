@@ -1,8 +1,9 @@
-﻿// UDP_klientv30.cpp : Ten plik zawiera funkcję „main”. W nim rozpoczyna się i kończy wykonywanie programu.
+﻿// Server_Instance.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
+
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include "UDP_klientv30/Server.h"
+#include "Server.h"
 #include <winsock2.h>
 #include <iostream>
 #include <cstdlib>  

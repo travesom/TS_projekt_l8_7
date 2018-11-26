@@ -1,5 +1,6 @@
-﻿// UDP_serwv_29.cpp : Ten plik zawiera funkcję „main”. W nim rozpoczyna się i kończy wykonywanie programu.
+﻿// TS_PROJECT_L8_7.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
+
 #pragma warning(disable:4996)
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "Protocol.h"
@@ -9,21 +10,23 @@
 #include <regex>
 // Link with ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
+
 bool check_OP(char ch) {
 	if (ch == 'd')
 		return true;
 }
-
-
 int main()
 {
 	system("chcp 1250");
 	char wybor;
-
+	time_t rawtime;
+	time(&rawtime);
 
 	//d.timeinfo = localtime(&rawtime);
 	//printf("Current local time and date: %s", asctime(d.timeinfo));//asc to do stringa daje 
 	std::string temp;
+
+
 
 	//temp = std::to_string(d.liczba1);
 	int iResult;
@@ -41,16 +44,14 @@ int main()
 	char SendBuf[1024];
 	char RecvBuf[1024];
 
-	std::cout << sizeof(long int) << std::endl;;
+	std::cout << sizeof(long int) << "\n";;
 	int BufLen = 1024;
 	int RBufLen = 1024;
 
-	time_t rawtime;
-	time(&rawtime);
-	TextProtocol d('p', 32, 88, 0, 0, rawtime);
+	TextProtocol d('p', 32, 88, 0, 0, (long int)rawtime);
 
-	std::cout << d.time << std::endl;
-	std::cout << rawtime << std::endl;
+	std::cout << d.time << "\n";
+	std::cout << rawtime << "\n";
 
 	strcpy_s(SendBuf, d.to_string(PROT_ID).c_str());
 
@@ -94,7 +95,7 @@ int main()
 
 	//---------------------------------------------
 	// Send a datagram to the receiver
-	std::cout << "Nazwiązywanie połączenia...\n";
+	std::cout << "Nawiązywanie połączenia\n";
 
 	iResult = sendto(SendSocket,
 		SendBuf, BufLen, 0, (SOCKADDR *)& RecvAddr, sizeof(RecvAddr));//time||ST||NS||ID
@@ -117,31 +118,25 @@ int main()
 	}
 
 
-	std::cout << "Wiadomowść zwrotna " << RecvBuf << std::endl;
-	std::cout << "String: " << (std::string) RecvBuf << std::endl;;
-	std::string match = "Identyfikator: ";
-	std::size_t found = (((std::string) RecvBuf).find(match));
-	d.ID = stoi(((std::string) RecvBuf).substr(found + 15));
-	std::cout << d.ID << std::endl;;
+	std::cout << "Wiadomowść zwrotna " << RecvBuf << "\n";
+	std::string RecvBufStr = std::string(RecvBuf);
+	std::cout << "String: " << RecvBufStr << "\n";
+	std::string match = HEAD_ID;
+	std::size_t found = (RecvBufStr.find(match));
+	d.ID = stoi(RecvBufStr.substr(found + 15));
+	std::cout << d.ID << "\n";;
 	//-----------------------wysylanie info
 	while (true) {
 		do {
-			std::cout << "wybierz opcje protokołu: " << std::endl << "jesli chcesz rozłoczyć wyslij r" << std::endl << " jesli chcesz cos obliczycyć wyslij o" << std::endl << "jesli chcesz zobaczyc historie wyslij h" << std::endl;
+			std::cout << "Wybierz opcje protokołu: " << "\n" << "jeśli chcesz rozłączyć wyślij r" << "\n" << " jeśli chcesz coś obliczyć wyslij o" << "\n" << "jeśli chcesz zobaczyć historię wyślij h" << "\n";
 			std::cin >> wybor;
 		} while (wybor != 'r');
 		if (wybor == 'r' || wybor == 'h' || wybor == 'o') {
 			time(&rawtime);
 			d.time = (long int)rawtime;
-			temp = HEAD_TIME;
-			temp.append(std::to_string(d.time));
-			temp.append(HEAD_ST);
-			temp.append(std::string(1, 'r'));
-			temp.append(HEAD_SN);
-			temp.append(std::to_string(0));
-			temp.append(HEAD_ID);
-			temp.append(std::to_string(d.ID));
-			strcpy_s(SendBuf, temp.c_str());
-			std::cout << SendBuf << std::endl;
+
+			strcpy_s(SendBuf, d.to_string(PROT_ID).c_str());
+			std::cout << SendBuf << "\n";
 			iResult = sendto(SendSocket,
 				SendBuf, BufLen, 0, (SOCKADDR *)& RecvAddr, sizeof(RecvAddr));//time||ST||NS||ID
 			if (iResult == SOCKET_ERROR) {
@@ -173,7 +168,7 @@ int main()
 
 
 	// When the application is finished sending, close the socket.
-	std::cout << "Skończono wysyłanie. Zamykanie gniazdka...\n";
+	std::cout << "Finished sending. Closing socket.\n";
 	iResult = closesocket(SendSocket);
 	if (iResult == SOCKET_ERROR) {
 		std::cout << "closesocket failed with error: " << WSAGetLastError() << "\n";
@@ -187,14 +182,3 @@ int main()
 	system("PAUSE");
 	return 0;
 }
-
-// Uruchomienie programu: Ctrl + F5 lub menu Debugowanie > Uruchom bez debugowania
-// Debugowanie programu: F5 lub menu Debugowanie > Rozpocznij debugowanie
-
-// Porady dotyczące rozpoczynania pracy:
-//   1. Użyj okna Eksploratora rozwiązań, aby dodać pliki i zarządzać nimi
-//   2. Użyj okna programu Team Explorer, aby nawiązać połączenie z kontrolą źródła
-//   3. Użyj okna Dane wyjściowe, aby sprawdzić dane wyjściowe kompilacji i inne komunikaty
-//   4. Użyj okna Lista błędów, aby zobaczyć błędy
-//   5. Wybierz pozycję Projekt > Dodaj nowy element, aby utworzyć nowe pliki kodu, lub wybierz pozycję Projekt > Dodaj istniejący element, aby dodać istniejące pliku kodu do projektu
-//   6. Aby w przyszłości ponownie otworzyć ten projekt, przejdź do pozycji Plik > Otwórz > Projekt i wybierz plik sln

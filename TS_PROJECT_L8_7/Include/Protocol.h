@@ -64,26 +64,26 @@ public:
 
 		int fieldNumber = 0; //Zmienna do œledzenia ile pól zosta³o ju¿ dodanych
 
-		if (fields[0]) { result += HEAD_TIME  + std::to_string(OP);      fieldNumber++; }
-		if (fields[1]) { result += HEAD_ST    + std::to_string(ST);      fieldNumber++; }
-		if (fields[2]) { result += HEAD_NUM_1 + std::to_string(number1); fieldNumber++; }
-		if (fields[3]) { result += HEAD_NUM_2 + std::to_string(number2); fieldNumber++; }
+		if (fields[0]) { result += HEAD_TIME  + std::to_string(OP) + ' ';      fieldNumber++; }
+		if (fields[1]) { result += HEAD_ST    + std::to_string(ST) + ' ';      fieldNumber++; }
+		if (fields[2]) { result += HEAD_NUM_1 + std::to_string(number1) + ' '; fieldNumber++; }
+		if (fields[3]) { result += HEAD_NUM_2 + std::to_string(number2) + ' '; fieldNumber++; }
 		//Zwrócenie wyniku, jeœli ju¿ dodano 4 pola
 		if (fieldNumber == 4) { return result; }
 
-		if (fields[4]) { result += HEAD_SN    + std::to_string(SN);      fieldNumber++; }
+		if (fields[4]) { result += HEAD_SN    + std::to_string(SN) + ' ';      fieldNumber++; }
 		//Zwrócenie wyniku, jeœli ju¿ dodano 4 pola
 		if (fieldNumber == 4) { return result; }
 
-		if (fields[5]) { result += HEAD_ID    + std::to_string(ID);      fieldNumber++; }
+		if (fields[5]) { result += HEAD_ID    + std::to_string(ID) + ' ';      fieldNumber++; }
 		//Zwrócenie wyniku, jeœli ju¿ dodano 4 pola
 		if (fieldNumber == 4) { return result; }
 
-		if (fields[6]) { result += HEAD_OP_ID + std::to_string(OP_ID);   fieldNumber++; }
+		if (fields[6]) { result += HEAD_OP_ID + std::to_string(OP_ID) + ' ';   fieldNumber++; }
 		//Zwrócenie wyniku, jeœli ju¿ dodano 4 pola
 		if (fieldNumber == 4) { return result; }
 
-		if (fields[7]) { result += HEAD_TIME  + std::to_string(time);}
+		if (fields[7]) { result += HEAD_TIME  + std::to_string(time) + ' ';}
 
 		return result;
 	}
