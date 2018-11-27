@@ -12,13 +12,12 @@ public:
 	bool start_session() {
 		TextProtocol d('p', 0, 0, GET_CURRENT_TIME()); d.ST = 'p';
 		std::string temp = HEAD_ID;
-		std::cout <<"wielkosc"<< temp.size() << '/n';
+		std::cout <<"Wielkoœæ: "<< temp.size() << '/n';
 		//¯¹danie o rozpoczêcie sesji
 		if (!send_text_protocol(d, 0)) {
 			std::cout << "B³¹d wysy³ania.\n";
 			return false;
 		}
-
 		//Odbieranie id
 		std::string received;
 		receive_text_protocol(received);

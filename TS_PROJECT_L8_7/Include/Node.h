@@ -16,8 +16,8 @@ protected:
 	SOCKET RecvSocket;
 	sockaddr_in RecvAddr1{};
 	sockaddr_in SendAddr1{};
-	char bufor[1024];
-	
+	char buffer[1024];
+
 
 	//Konstruktor
 	NodeUDP(const std::string& IP, const unsigned short& Port1, const unsigned short& Port2) {
@@ -64,60 +64,46 @@ protected:
 
 public:
 	bool receive_text_protocol(std::string& protocol) {
+		for(unsigned int i = 0; i < 1024; i++){
+			buffer[i] = NULL;
+		}
+
 		std::cout << "Odbieranie komunikatu...\n";
-		
+
 
 		std::cout << "Address: " << inet_ntoa(RecvAddr1.sin_addr) << '\n';
 		std::cout << "Port: " << RecvAddr1.sin_port << '\n';
 
 		int RecvAddrSize = sizeof(RecvAddr1);
-		const int iResult = recvfrom(RecvSocket, bufor, sizeof(bufor), 0, reinterpret_cast<SOCKADDR *>(&RecvAddr1), &RecvAddrSize);
+		const int iResult = recvfrom(RecvSocket, buffer, sizeof(buffer), 0, reinterpret_cast<SOCKADDR *>(&RecvAddr1), &RecvAddrSize);
 		if (iResult == SOCKET_ERROR) {
 			std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return false;
 		}
-		std::vector<char> d;
-		std::cout << "\nbufor: " << bufor  << "\n";
-		for (int i = 0; i < 1024; i++) {
-			if (bufor[i] != '\0') {
-				d.push_back(bufor[i]);
-
+		std::string result;
+		std::cout << "\nbufor: " << buffer << "\n";
+		for (unsigned int i = 0; i < 1024; i++) {
+			if (buffer[i] != NULL) {
+				result.push_back(buffer[i]);
 			}
-			else
-				break;
-			
-
-
-
-
+			else { break; }
 		}
-		
-		
+		result.push_back(NULL);
 
-		std::string result(d.begin(),d.end());
-		
 		protocol = result;
-		std::cout << "\nResult: " << result <<" dlugosc: " <<"\n";
-		
+		std::cout << "\nResult: " << result << "\n";
+		std::cout << "D³ugoœæ: " << result.length() << "\n";
+
 		return true;
 	}
 
 	bool send_text_protocol(const TextProtocol& protocol, const int& field) {
-		std::cout << "Wysy³anie komunikatu...\n";
+		std::cout << "\nWysy³anie komunikatu...\n";
 		std::string sendStr = protocol.to_string(field);
-		
-		std::cout <<"Komunikat "<< sendStr <<"D³ugoœæ komunikatu: " << sendStr.length() << std::endl;
-		char* SendBuf = new char[sendStr.length()+1];
-		for (int i = 0; i < sendStr.length(); i++) {
-			SendBuf[i] = sendStr.at(i);
 
+		std::cout << "Komunikat: " << sendStr << "\nD³ugoœæ komunikatu: " << sendStr.length() << std::endl;
 
-		}
-		SendBuf[sendStr.length()] = '\0';
-		
-		std::cout << "char: " <<SendBuf << '\n';
-		
-		const int iResult = sendto(SendSocket,SendBuf, sizeof(SendBuf), 0, (SOCKADDR *)& SendAddr1, sizeof(SendAddr1));
+		const int iResult = sendto(SendSocket, sendStr.c_str(), sendStr.length(), 0, (SOCKADDR *)& SendAddr1, sizeof(SendAddr1));
 		if (iResult == SOCKET_ERROR) {
 			std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			closesocket(SendSocket);

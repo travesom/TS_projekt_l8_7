@@ -23,15 +23,15 @@ inline const tm GET_CURRENT_TIME() {
 
 //HEAD od header (nag³ówek)
 //Makra do dodawania w funkcji to_string()
-#define HEAD_OP		"Operacja: "//10
-#define HEAD_ST		"Status: " //8
-#define HEAD_NUM_1  "Argument 1: "//12
-#define HEAD_NUM_2  "Argument 2: "//12
-#define HEAD_SN     "Numer Sekwencyjny: "
-#define HEAD_ID     "Identyfikator: "
-#define HEAD_OP_ID  "Identyfikator operacji: "
-#define HEAD_TIME   "Czas: "
-#define HEAD_LENGTH "Dlugosc nastepnego komunikatu: "
+#define HEAD_OP		std::string("Operacja: ")//10
+#define HEAD_ST		std::string("Status: ") //8
+#define HEAD_NUM_1  std::string("Argument 1: ")//12
+#define HEAD_NUM_2  std::string("Argument 2: ")//12
+#define HEAD_SN     std::string("Numer Sekwencyjny: ")
+#define HEAD_ID     std::string("Identyfikator: ")
+#define HEAD_OP_ID  std::string("Identyfikator operacji: ")
+#define HEAD_TIME   std::string("Czas: ")
+#define HEAD_LENGTH std::string("Dlugoœæ nastêpnego komunikatu: ")
 
 /*
  * Znaczenia poszczególnych bitów w bitset<>:
@@ -78,11 +78,11 @@ public:
 		std::stringstream resultStream;
 		result += HEAD_TIME;
 		resultStream << time;
-		resultStream >> result;
-		result += ' ';
-		std::cout << "Time result: " << result << '\n';
-		
-		if (field == 1) { std::string temp(1, OP); result += HEAD_OP +temp; }
+		std::string temp;
+		resultStream >> temp;
+		result += temp + ' ';
+
+		if (field == 1) { std::string temp(1, OP); result += HEAD_OP + temp; }
 		else if (field == 0) { std::string temp(1, ST); result += HEAD_ST; result.append(temp); }
 		else if (field == 2) { result += HEAD_NUM_1 + std::to_string(number1); }
 		else if (field == 3) { result += HEAD_NUM_2 + std::to_string(number2); }
@@ -101,58 +101,59 @@ public:
 	}
 
 	void from_string(const std::string& data) {
-		std::cout << data << std::endl;
-		
-		std::cout << '/n';
+		std::cout << "\nfrom_string\n" << "Dane: " << data << '\n';
+
 		//Czas
 		auto iterator = data.find(HEAD_TIME);
-		
+
 		std::string temp;
 		//Godziny
-		for (auto i = iterator + 1; i <= iterator + 3; i++) {
+		for (auto i = iterator + HEAD_TIME.length(); i <= iterator + HEAD_TIME.length() + 1; i++) {
 			temp += data[i];
 		}
 		time.tm_hour = std::stoi(temp);
-		std::cout << temp << std::endl;
+		std::cout << "Godzina: " << temp << '\n';
 		temp.clear();
 
 		//Minuty
-		for (auto i = iterator + 4; i <= iterator + 6; i++) {
+		for (auto i = iterator + HEAD_TIME.length() + 3; i <= iterator + HEAD_TIME.length() + 4; i++) {
 			temp += data[i];
 		}
 		time.tm_min = std::stoi(temp);
-		std::cout << temp << std::endl;
+		std::cout << "Minuty: " << temp << '\n';
 		temp.clear();
 
 		//Sekundy
-		for (auto i = iterator + 7; i <= iterator + 9; i++) {
+		for (auto i = iterator + HEAD_TIME.length() + 6; i <= iterator + HEAD_TIME.length() + 7; i++) {
 			temp += data[i];
 		}
-		std::cout << temp << std::endl;
+		std::cout << "Sekundy: " << temp << '\n';
 		time.tm_sec = std::stoi(temp);
 		temp.clear();
 
 		//Operacja
-		iterator = data.find(HEAD_OP);
-		temp = data[iterator + 1];
-		OP = temp[0];
+		iterator = data.find(HEAD_ST);
+		temp = data[iterator + HEAD_ST.length()];
+		ST = temp[0];
 		temp.clear();
-		std::cout << OP << std::endl;
+		std::cout << "Status: " << ST << '\n';
 		//Numer Sekwencyjny
 		iterator = data.find(HEAD_SN);
 		//std::cout <<"iterator "<<iterator << '/n';
-		
-		for (auto i = iterator + 1; i <= iterator+2; i++) {
+
+		for (auto i = iterator + HEAD_SN.length(); i <= iterator + HEAD_SN.length() + 1; i++) {
 			temp += data[i];
 		}
 		SN = std::stoi(temp);
-		std::cout << SN << std::endl;
+		temp.clear();
+		std::cout << "Numer sekwencyjny: " << SN << '\n';
 		//Numer Identyfikacyjny
 		iterator = data.find(HEAD_ID);
-		for (auto i = iterator + 1; i <= iterator + 2; i++) {
+		for (auto i = iterator + HEAD_ID.length(); i <= iterator + HEAD_ID.length() + 1; i++) {
 			temp += data[i];
 		}
 		ID = std::stoi(temp);
+		std::cout << "Identyfikator sesji: " << ID << '\n';
 	}
 };
 /*
