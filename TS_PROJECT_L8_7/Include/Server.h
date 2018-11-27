@@ -12,44 +12,10 @@ inline int randInt(const int &min, const int &max) {
 	return d(gen);
 }
 
-class ServerUDP : public NodeUDP{
+class ServerUDP : public NodeUDP {
 public:
-	ServerUDP(const std::string& IP, const unsigned short& Port1, const unsigned short& Port2) {
-		// Initialize Winsock
-		int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-		if (iResult != NO_ERROR) {
-			std::cout << "WSAStartup failed with error " << iResult << "\n";
-			return;
-		}
-		//-----------------------------------------------
-		// Create a receiver socket to receive datagrams
-		RecvSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-		if (RecvSocket == INVALID_SOCKET) {
-			std::cout << "socket failed with error " << WSAGetLastError << "\n";
-			return;
-		}
-		//-----------------------------------------------
-		// Bind the socket to any address and the specified port.
-		RecvAddr.sin_family = AF_INET;
-		RecvAddr.sin_port = htons(Port1);
-		RecvAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-		//---------------------------------------------
-		// Create a socket for sending data
-		SendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-		if (SendSocket == INVALID_SOCKET) {
-			std::cout << "socket niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
-			WSACleanup();
-			return;
-		}
-		//---------------------------------------------
-		// Set up the RecvAddr structure with the IP address
-		// and the specified port number.
-		RecvAddr2.sin_family = AF_INET;
-		RecvAddr2.sin_port = htons(Port2);
-		RecvAddr2.sin_addr.s_addr = inet_addr(IP.c_str());
-
-		iResult = bind(RecvSocket, (SOCKADDR *)& RecvAddr, sizeof(RecvAddr));
+	ServerUDP(const std::string& IP, const unsigned short& Port1, const unsigned short& Port2) : NodeUDP(IP, Port1, Port2) {
+		const int iResult = bind(RecvSocket, (SOCKADDR *)& RecvAddr1, sizeof(RecvAddr1));
 		if (iResult != 0) {
 			std::cout << "Bindowanie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return;
@@ -72,14 +38,14 @@ public:
 	void receive_text_protocol_1() {
 
 		std::cout << "Odbieranie komunikatów...\n";
-		const int iResult = recvfrom(RecvSocket, revbuf1, 61, 0, (SOCKADDR *)& SenderAddr, &SenderAddrSize);
+		const int iResult = recvfrom(RecvSocket, RecvBuf2, 61, 0, (SOCKADDR *)& SenderAddr, &SenderAddrSize);
 		if (iResult == SOCKET_ERROR) {
 			std::cout << "Odbieranie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return;
 		}
-		std::string temp(revbuf1); temp.resize(61);
+		std::string temp(RecvBuf2); temp.resize(61);
 		std::cout << "\nRecvBuf: " << temp << '\n';
-		std::cout << "D³ugoœæ RecvBuf: " << sizeof(revbuf1);
+		std::cout << "D³ugoœæ RecvBuf: " << sizeof(RecvBuf2);
 		std::cout << "D³ugoœæ temp: " << temp.size() << "\n\n";
 	}
 	bool send_text_protocol_1(TextProtocol &d) {// wysyla klientow ID

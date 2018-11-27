@@ -164,6 +164,7 @@
     <ClCompile Include="Server_Instance.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\TS_PROJECT_L8_7\Include\Node.h" />
     <ClInclude Include="..\TS_PROJECT_L8_7\Include\Protocol.h" />
     <ClInclude Include="..\TS_PROJECT_L8_7\Include\Server.h" />
   </ItemGroup>

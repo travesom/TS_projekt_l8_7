@@ -45,12 +45,9 @@ int main()
 	//-----------------------------------------------
 	// Close the socket when finished receiving datagrams
 	std::cout << "Skończono odbieranie. Zamykanie gniazdka...\n";
-	iResult = closesocket(server.RecvSocket);
-	if (iResult == SOCKET_ERROR) {
-		std::cout << "Zamykanie gniazdka niepowiodło się z błędem: " << WSAGetLastError() << "\n";
-		return 1;
+	if(!server.close_socket()){
+		std::cout << "Błąd zamykania gniazdka.\n";
 	}
-
 	//-----------------------------------------------
 	// Clean up and exit.
 	std::cout << "Kończenie...\n";

@@ -94,7 +94,7 @@ int main()
 	const unsigned short Port2 = 27015;
 	const std::string IP = "127.0.0.1";
 	//char SendBuf[1024];
-	//char RecvBuf[1024];
+	//char RecvBuf1[1024];
 
 
 	//const int BufLen = 1024;
