@@ -72,6 +72,8 @@ void choose_status(TextProtocol& d, ClientUDP& klient) {
 
 
 }
+
+
 int main()
 {
 	system("chcp 1250");

@@ -1,12 +1,8 @@
 #pragma once
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include <winsock2.h>
-#include <iostream>
-#include "Protocol.h"
+#include "Node.h"
 #include <random>
 #include <ctime>
-
-#pragma comment(lib, "Ws2_32.lib")// Link with ws2_32.lib
 
 inline int randInt(const int &min, const int &max) {
 	if (max <= min) return min;
@@ -16,22 +12,7 @@ inline int randInt(const int &min, const int &max) {
 	return d(gen);
 }
 
-class ServerUDP {
-private:
-public: //Tymczasowo
-	WSADATA wsaData{};
-	SOCKET SendSocket;
-	SOCKET RecvSocket;
-	sockaddr_in RecvAddr{};
-	sockaddr_in RecvAddr2{};
-
-	sockaddr_in SenderAddr;
-	int SenderAddrSize = sizeof(SenderAddr);
-
-	char SendBuf[1024];
-	char RecvBuf[1024], revbuf1[61];
-	int BufLen = 1024;
-
+class ServerUDP : public NodeUDP{
 public:
 	ServerUDP(const std::string& IP, const unsigned short& Port1, const unsigned short& Port2) {
 		// Initialize Winsock
@@ -88,15 +69,6 @@ public:
 		std::cout << SendBuf << std::endl;
 	}
 
-	void receive_text_protocol() {
-		std::cout << "Odbieranie komunikatów...\n";
-		const int iResult = recvfrom(RecvSocket, RecvBuf, BufLen, 0, (SOCKADDR *)& SenderAddr, &SenderAddrSize);
-		if (iResult == SOCKET_ERROR) {
-			std::cout << "Odbieranie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
-			return;
-		}
-		std::cout << "\nRecvBuf: " << RecvBuf << "\n\n";
-	}
 	void receive_text_protocol_1() {
 
 		std::cout << "Odbieranie komunikatów...\n";

@@ -1,26 +1,8 @@
 #pragma once
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include <winsock2.h>
-#include <iostream>
-#include "Protocol.h"
+#include "Node.h"
 
-#pragma comment(lib, "Ws2_32.lib")// Link with ws2_32.lib
-class ClientUDP {
-private:
-public: //Tymczasowo
-	WSADATA wsaData{};
-	SOCKET SendSocket;
-	SOCKET RecvSocket;
-	sockaddr_in RecvAddr{};
-	sockaddr_in RecvAddr2{};
-
-	sockaddr_in SenderAddr;
-	int SenderAddrSize = sizeof(SenderAddr);
-
-	char SendBuf[1024];
-	char RecvBuf[1024];
-	int BufLen = 1024;
-
+class ClientUDP : public NodeUDP {
 public:
 	ClientUDP(const std::string& IP, const unsigned short& Port1, const unsigned short& Port2) {
 		// Initialize Winsock
@@ -72,28 +54,6 @@ public:
 		return true;
 	}
 
-	void receive_text_protocol(TextProtocol&) {
-		std::cout << "Wysy³anie komunikatu...\n";
-		const int iResult = recvfrom(RecvSocket, RecvBuf, BufLen, 0, (SOCKADDR *)& RecvAddr2, &SenderAddrSize);
-		if (iResult == SOCKET_ERROR) {
-			std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
-		}
-		std::cout << "\nRecvBuf: " << RecvBuf << "\n\n";
-	}
-	bool send_text_protocol(const TextProtocol& d, const std::bitset<8>& fields) {//pierwsze datagramy 61 dlugosc
-		std::string sendStr = d.to_string(fields);
-
-		std::cout << "D³ugoœæ komunikatu: " << sendStr.length() << std::endl;
-
-		const int iResult = sendto(SendSocket, sendStr.c_str(), sendStr.length(), 0, (SOCKADDR *)& RecvAddr, sizeof(RecvAddr));//61 dlugosci
-		if (iResult == SOCKET_ERROR) {
-			std::cout << "sendto failed with error: " << WSAGetLastError() << "\n";
-			closesocket(SendSocket);
-			WSACleanup();
-			return false;
-		}
-		return true;
-	}
 	void receive_text_protocol_1(TextProtocol& d) {// odbiera komunikat w ktorym serwer nadaje ID
 		char temp_c[62];
 
