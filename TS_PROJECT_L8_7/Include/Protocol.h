@@ -1,6 +1,25 @@
 #pragma once
 #include <string>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
+
+
+inline std::ostream& operator << (std::ostream& os, const tm& time) {
+	os << std::setfill('0') << std::setw(2) << time.tm_hour << ':' << std::setfill('0') << std::setw(2) << time.tm_min << ':' << std::setfill('0') << std::setw(2) << time.tm_sec;
+	return os;
+}
+
+inline const tm GET_CURRENT_TIME() {
+	time_t tt;
+	time(&tt);
+	tm time;
+	localtime_s(&time, &tt);
+	time.tm_year += 1900;
+	time.tm_mon += 1;
+	return time;
+}
+
 
 //HEAD od header (nag³ówek)
 //Makra do dodawania w funkcji to_string()
@@ -29,24 +48,25 @@ public:
 	char OP, ST;          //pole operacji, pole statusu
 	int number1, number2; //watroœæ 1, wartoœæ 2
 	int SN, ID, OP_ID;    //numer sekwencyjny, identyfikator, identyfikator obliczne
-	long int  time;       //czas
-	int Length;//dlugosc
+	tm  time;   //czas
+	int Length; //dlugoœæ
+
 	//Konstruktor domyœlny
-	TextProtocol() : OP(0), ST(0), number1(0), number2(0), SN(0), ID(0), OP_ID(0), time(0), Length(0) {};
+	TextProtocol() : OP(0), ST(0), number1(0), number2(0), SN(0), ID(0), OP_ID(0), time(), Length(0) {};
 
 	//Konstruktor przyjmuj¹cy wszystkie pola
 	TextProtocol(const char& OP_, const char& ST_, const int& number1_, const int& number2_,
-		const int& NS_, const int& ID_, const int& OP_ID_, const long int& time_)
+		const int& NS_, const int& ID_, const int& OP_ID_, const tm& time_)
 		: OP(OP_), ST(ST_), number1(number1_), number2(number2_), SN(NS_), ID(ID_),
 		OP_ID(OP_ID_), time(time_), Length(0) {}
 
 	//Konstruktor przyjmuj¹cy pola ID i time
-	TextProtocol(const char& ST_, const int& SN_, const int& ID_, const long int& time_)
+	TextProtocol(const char& ST_, const int& SN_, const int& ID_, const tm& time_)
 		: TextProtocol(NULL, ST_, NULL, NULL, SN_, ID_, NULL, time_) {}
 
 	//Konstruktor przyhmyj¹cy pola ST, number1, number2, SN, ID, time
 	TextProtocol(const char& ST_, const int& number1_, const int& number2_, const int& SN_,
-		const int& ID_, const long int& time_)
+		const int& ID_, const tm& time_)
 		: TextProtocol(NULL, ST_, number1_, number2_, SN_, ID_, NULL, time_) {}
 
 
@@ -56,7 +76,13 @@ public:
 	std::string to_string(const int& field) const {
 		std::string result;
 
-		result += HEAD_TIME + std::to_string(time) + ' ';
+		std::stringstream resultStream;
+		result += HEAD_TIME;
+		resultStream << time;
+		resultStream >> result;
+		result += ' ';
+		std::cout << "Time result: " << result << '\n';
+
 		if (field == 0) { result += HEAD_OP + std::to_string(OP); }
 		else if (field == 1) { result += HEAD_ST + std::to_string(ST); }
 		else if (field == 2) { result += HEAD_NUM_1 + std::to_string(number1); }
@@ -73,6 +99,45 @@ public:
 		std::cout << "Result length: " << result.length() << '\n';
 		std::cout << "Result: " << result << '\n';
 		return result;
+	}
+
+	void from_string(const std::string& data) {
+		//Czas
+		auto iterator = data.find(HEAD_TIME);
+		std::string temp;
+		//Godziny
+		for (auto i = iterator + 1; i <= iterator + 3; i++) {
+			temp += data[i];
+		}
+		time.tm_hour = std::stoi(temp);
+		temp.clear();
+
+		//Minuty
+		for (auto i = iterator + 4; i <= iterator + 6; i++) {
+			temp += data[i];
+		}
+		time.tm_min = std::stoi(temp);
+		temp.clear();
+
+		//Sekundy
+		for (auto i = iterator + 7; i <= iterator + 9; i++) {
+			temp += data[i];
+		}
+		time.tm_sec = std::stoi(temp);
+		temp.clear();
+
+		//Operacja
+		iterator = data.find(HEAD_OP);
+		temp = data[iterator + 1];
+		OP = temp[0];
+		temp.clear();
+
+		//Numer Sekwencyjny
+		iterator = data.find(HEAD_SN);
+		for (auto i = iterator + 1; i <= iterator + 9; i++) {
+			temp += data[i];
+		}
+		SN = std::stoi(temp);
 	}
 };
 /*

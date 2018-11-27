@@ -20,30 +20,22 @@ long int get_time() {
 	return (long int)rawtime;
 
 };
+
 void choose_status(TextProtocol& d, ClientUDP& klient) {
 	char wybor;
-	std::cout << "wybierz opcje protokołu: " << std::endl 
-		<< "jesli chcesz rozłączyć wyślij r" << std::endl 
-		<< " jesli chcesz coś obliczyć wyślij o" << std::endl 
-		<< "jesli chcesz zobaczyc historie wyslij h" << std::endl;
+	std::cout << "Wybór opcji protokołu: \n"
+		<< "- Jeśli chcesz rozłączyć wyślij 'r'\n"
+		<< "- Jeśli chcesz coś obliczyć wyślij 'o'\n"
+		<< "- jeśli chcesz zobaczyć historię wyślij 'h'\n";
+	std::cout << "Wpisz swój wybór: ";
 	std::cin >> wybor;
 	if (wybor == 'r' || wybor == 'o' || wybor == 'h') {
 		if (wybor == 'r') {
-			std::string temp,temp2;
+			std::string temp, temp2;
 			d.SN = 1;
 			d.ST = 'r';
-			d.time = get_time();
-			temp = HEAD_TIME; temp.append(std::to_string(d.time));
-			temp.append(HEAD_ST);
-			temp.append(std::string(1, d.ST));
-			temp.append(HEAD_SN);
-			temp.append(std::to_string(d.SN));
-			temp.append(HEAD_ID);
-			temp.append(std::to_string(d.ID));
-			d.time = get_time();
 			d.Length = temp.length();
-			std::cout << "dlugosc komunikatu rozlączenia: " << temp.length() <<std::endl;
-			temp2 = HEAD_TIME; temp.append(std::to_string(d.time));
+			std::cout << "dlugosc komunikatu rozlączenia: " << temp.length() << std::endl;
 			temp2.append(HEAD_LENGTH);
 			temp2.append(std::string(1, d.ST));
 			temp2.append(HEAD_SN);
@@ -51,20 +43,20 @@ void choose_status(TextProtocol& d, ClientUDP& klient) {
 			temp2.append(HEAD_ID);
 			temp2.append(std::to_string(d.ID));
 			std::cout << "dlugosc komunikatu informujacego odlugosci: " << temp2.length() << std::endl;
-			
 
 
 
-	 
-		
-		
+
+
+
+
 		}
-	
-	
-	
-	
-	 }
-	else { std::cout << "wprowadziles zle dane, podaj dane ponownie" << std :: endl; };
+
+
+
+
+	}
+	else { std::cout << "wprowadziles zle dane, podaj dane ponownie" << std::endl; };
 
 
 
@@ -80,47 +72,32 @@ int main()
 	system("chcp 1250");
 	system("cls");
 	//char wybor;
-	time_t rawtime;
-	time(&rawtime);
 
-	
-	//printf("Current local time and date: %s", asctime(d.timeinfo));//asc to do stringa daje 
-	std::string temp;
-
-
-
-	//temp = std::to_string(d.liczba1);
-	
-
-	const unsigned short Port = 27014;
-	const unsigned short Port2 = 27015;
 	const std::string IP = "127.0.0.1";
-	//char SendBuf[1024];
-	//char RecvBuf1[1024];
+	const unsigned short Port1 = 27014;
+	const unsigned short Port2 = 27015;
 
+	TextProtocol d;
+	ClientUDP client(IP, Port1, Port2);
 
-	//const int BufLen = 1024;
-	//const int RBufLen = 1024;
-	ClientUDP klient(IP, Port, Port2);
-	TextProtocol d('p', 0, 0, rawtime);
+	bool stop = false;
 
-	std::cout << d.time << "\n";
-	std::cout << rawtime << "\n";
+	//Pętla nawiązywania sesji
+	while (!stop) {
+		if (!client.start_session()) {
+			std::cout << "Błąd sesji.\n";
+		}
 
-	if(!klient.send_text_protocol(d, 0)){
-		std::cout << "Błąd wysyłania.\n";
+		std::cout << "Czy chcesz rozpocząć ponownie sesję? (Y/N)";
+		std::string answer;
+		std::cin >> answer;
+		if (answer == "Y" || answer == "y") { continue; }
+		if (answer == "N" || answer == "n") { break; }
 	}
-	klient.receive_text_protocol_1(d);
+
 	while (true) {
-		choose_status(d,klient);
-		if (d.OP = 'r')break;
-
-
-
-
-
-
-
+		choose_status(d, client);
+		if (d.OP == 'r') { break; }
 	}
 	//---------------------------------------------
 	// Clean up and quit.

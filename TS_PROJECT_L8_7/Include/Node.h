@@ -6,25 +6,18 @@
 #pragma comment(lib, "Ws2_32.lib")// Link with ws2_32.lib
 
 static const unsigned int BufLen = 1024;
-static const unsigned int id_message_size = 67;
+static const unsigned int id_message_size = 59;
 
-class NodeUDP{
+class NodeUDP {
 protected:
 	WSADATA wsaData{};
 	SOCKET SendSocket;
 	SOCKET RecvSocket;
 	sockaddr_in RecvAddr1{};
-	sockaddr_in RecvAddr2{};
-
-	sockaddr_in SenderAddr;
-	int SenderAddrSize = sizeof(SenderAddr);
-
-	char SendBuf[1024];
-	char RecvBuf1[1024], RecvBuf2[id_message_size];
-
+	sockaddr_in SendAddr1{};
 
 	//Konstruktor
-	NodeUDP(const std::string& IP, const unsigned short& Port1, const unsigned short& Port2){
+	NodeUDP(const std::string& IP, const unsigned short& Port1, const unsigned short& Port2) {
 		// Initialize Winsock
 		int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 		if (iResult != NO_ERROR) {
@@ -55,9 +48,9 @@ protected:
 		//---------------------------------------------
 		// Set up the RecvAddr1 structure with the IP address
 		// and the specified port number.
-		RecvAddr2.sin_family = AF_INET;
-		RecvAddr2.sin_port = htons(Port2);
-		RecvAddr2.sin_addr.s_addr = inet_addr(IP.c_str());
+		SendAddr1.sin_family = AF_INET;
+		SendAddr1.sin_port = htons(Port2);
+		SendAddr1.sin_addr.s_addr = inet_addr(IP.c_str());
 
 		iResult = bind(RecvSocket, (SOCKADDR *)& RecvAddr1, sizeof(RecvAddr1));
 		if (iResult != 0) {
@@ -67,31 +60,40 @@ protected:
 	}
 
 public:
-	bool receive_text_protocol(std::string& protocol) {
+	bool receive_text_protocol(std::string& protocol, const unsigned int& size) {
 		std::cout << "Odbieranie komunikatu...\n";
-		const int iResult = recvfrom(RecvSocket, RecvBuf1, BufLen, 0, (SOCKADDR *)& RecvAddr1, &SenderAddrSize);
+		char* RecvBuf = new char[size];
+
+		std::cout << "Address: " << inet_ntoa(RecvAddr1.sin_addr) << '\n';
+		std::cout << "Port: " << RecvAddr1.sin_port << '\n';
+
+		int RecvAddrSize = sizeof(RecvAddr1);
+		const int iResult = recvfrom(RecvSocket, RecvBuf, size, 0, reinterpret_cast<SOCKADDR *>(&RecvAddr1), &RecvAddrSize);
 		if (iResult == SOCKET_ERROR) {
 			std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return false;
 		}
 
-		std::string result;
-		unsigned int i = 0;
-		while(true){
-			result += RecvBuf1[i];
-			if (RecvBuf1[i] == '\0') { break; };
-		}
 
-		std::cout << "\nRecvBuf: " << RecvBuf1 << "\n\n";
+		std::string result;
+		for (unsigned int i = 0; i < size; i++) {
+			result += RecvBuf[i];
+		}
+		protocol = result;
+		std::cout << "\nResult: " << result << "\n";
+
 		return true;
 	}
 
-	bool send_text_protocol(const TextProtocol& protocol, const int& field) {//pierwsze datagramy 61 dlugosc
+	bool send_text_protocol(const TextProtocol& protocol, const int& field) {
+		std::cout << "Wysy³anie komunikatu...\n";
 		std::string sendStr = protocol.to_string(field);
 
 		std::cout << "D³ugoœæ komunikatu: " << sendStr.length() << std::endl;
 
-		const int iResult = sendto(SendSocket, sendStr.c_str(), sendStr.length(), 0, (SOCKADDR *)& RecvAddr2, sizeof(RecvAddr2));//61 dlugosci
+		std::cout << "Address: " << inet_ntoa(SendAddr1.sin_addr) << '\n';
+		std::cout << "Port: " << SendAddr1.sin_port << '\n';
+		const int iResult = sendto(SendSocket, sendStr.c_str(), sendStr.length(), 0, (SOCKADDR *)& SendAddr1, sizeof(SendAddr1));
 		if (iResult == SOCKET_ERROR) {
 			std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			closesocket(SendSocket);
