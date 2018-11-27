@@ -20,7 +20,7 @@ public:
 	bool start_session() {
 		//Czekanie na ¿¹danie sesji
 		std::string received;
-		receive_text_protocol(received, 0);
+		receive_text_protocol(received);
 
 		//Wys³anie ID
 		const TextProtocol d('p', 0, randInt(10, 99), GET_CURRENT_TIME());

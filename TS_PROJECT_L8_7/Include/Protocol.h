@@ -23,14 +23,14 @@ inline const tm GET_CURRENT_TIME() {
 
 //HEAD od header (nag³ówek)
 //Makra do dodawania w funkcji to_string()
-#define HEAD_OP "Operacja: "
-#define HEAD_ST "Status: "
-#define HEAD_NUM_1 "Argument 1: "
-#define HEAD_NUM_2 "Argument 2: "
-#define HEAD_SN "Numer Sekwencyjny: "
-#define HEAD_ID "Identyfikator: "
-#define HEAD_OP_ID "Identyfikator operacji: "
-#define HEAD_TIME "Czas: "
+#define HEAD_OP		"Operacja: "//10
+#define HEAD_ST		"Status: " //8
+#define HEAD_NUM_1  "Argument 1: "//12
+#define HEAD_NUM_2  "Argument 2: "//12
+#define HEAD_SN     "Numer Sekwencyjny: "
+#define HEAD_ID     "Identyfikator: "
+#define HEAD_OP_ID  "Identyfikator operacji: "
+#define HEAD_TIME   "Czas: "
 #define HEAD_LENGTH "Dlugosc nastepnego komunikatu: "
 
 /*
@@ -48,17 +48,16 @@ public:
 	char OP, ST;          //pole operacji, pole statusu
 	int number1, number2; //watroœæ 1, wartoœæ 2
 	int SN, ID, OP_ID;    //numer sekwencyjny, identyfikator, identyfikator obliczne
-	tm  time;   //czas
-	int Length; //dlugoœæ
+	tm  time;   //czas //dlugoœæ
 
 	//Konstruktor domyœlny
-	TextProtocol() : OP(0), ST(0), number1(0), number2(0), SN(0), ID(0), OP_ID(0), time(), Length(0) {};
+	TextProtocol() : OP(0), ST(0), number1(0), number2(0), SN(0), ID(0), OP_ID(0), time() {};
 
 	//Konstruktor przyjmuj¹cy wszystkie pola
 	TextProtocol(const char& OP_, const char& ST_, const int& number1_, const int& number2_,
 		const int& NS_, const int& ID_, const int& OP_ID_, const tm& time_)
 		: OP(OP_), ST(ST_), number1(number1_), number2(number2_), SN(NS_), ID(ID_),
-		OP_ID(OP_ID_), time(time_), Length(0) {}
+		OP_ID(OP_ID_), time(time_) {}
 
 	//Konstruktor przyjmuj¹cy pola ID i time
 	TextProtocol(const char& ST_, const int& SN_, const int& ID_, const tm& time_)
@@ -82,9 +81,9 @@ public:
 		resultStream >> result;
 		result += ' ';
 		std::cout << "Time result: " << result << '\n';
-
-		if (field == 0) { result += HEAD_OP + std::to_string(OP); }
-		else if (field == 1) { result += HEAD_ST + std::to_string(ST); }
+		
+		if (field == 1) { std::string temp(1, OP); result += HEAD_OP +temp; }
+		else if (field == 0) { std::string temp(1, ST); result += HEAD_ST; result.append(temp); }
 		else if (field == 2) { result += HEAD_NUM_1 + std::to_string(number1); }
 		else if (field == 3) { result += HEAD_NUM_2 + std::to_string(number2); }
 		else if (field == 4) { result += HEAD_OP_ID + std::to_string(OP_ID); }
@@ -102,14 +101,19 @@ public:
 	}
 
 	void from_string(const std::string& data) {
+		std::cout << data << std::endl;
+		
+		std::cout << '/n';
 		//Czas
 		auto iterator = data.find(HEAD_TIME);
+		
 		std::string temp;
 		//Godziny
 		for (auto i = iterator + 1; i <= iterator + 3; i++) {
 			temp += data[i];
 		}
 		time.tm_hour = std::stoi(temp);
+		std::cout << temp << std::endl;
 		temp.clear();
 
 		//Minuty
@@ -117,12 +121,14 @@ public:
 			temp += data[i];
 		}
 		time.tm_min = std::stoi(temp);
+		std::cout << temp << std::endl;
 		temp.clear();
 
 		//Sekundy
 		for (auto i = iterator + 7; i <= iterator + 9; i++) {
 			temp += data[i];
 		}
+		std::cout << temp << std::endl;
 		time.tm_sec = std::stoi(temp);
 		temp.clear();
 
@@ -131,13 +137,22 @@ public:
 		temp = data[iterator + 1];
 		OP = temp[0];
 		temp.clear();
-
+		std::cout << OP << std::endl;
 		//Numer Sekwencyjny
 		iterator = data.find(HEAD_SN);
-		for (auto i = iterator + 1; i <= iterator + 9; i++) {
+		//std::cout <<"iterator "<<iterator << '/n';
+		
+		for (auto i = iterator + 1; i <= iterator+2; i++) {
 			temp += data[i];
 		}
 		SN = std::stoi(temp);
+		std::cout << SN << std::endl;
+		//Numer Identyfikacyjny
+		iterator = data.find(HEAD_ID);
+		for (auto i = iterator + 1; i <= iterator + 2; i++) {
+			temp += data[i];
+		}
+		ID = std::stoi(temp);
 	}
 };
 /*

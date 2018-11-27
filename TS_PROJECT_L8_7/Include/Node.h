@@ -2,11 +2,12 @@
 #include "Protocol.h"
 #include <winsock2.h>
 #include <iostream>
+#include <vector>
 
 #pragma comment(lib, "Ws2_32.lib")// Link with ws2_32.lib
 
 static const unsigned int BufLen = 1024;
-static const unsigned int id_message_size = 59;
+static const unsigned int id_message_size = 57;
 
 class NodeUDP {
 protected:
@@ -15,6 +16,8 @@ protected:
 	SOCKET RecvSocket;
 	sockaddr_in RecvAddr1{};
 	sockaddr_in SendAddr1{};
+	char bufor[1024];
+	
 
 	//Konstruktor
 	NodeUDP(const std::string& IP, const unsigned short& Port1, const unsigned short& Port2) {
@@ -60,40 +63,61 @@ protected:
 	}
 
 public:
-	bool receive_text_protocol(std::string& protocol, const unsigned int& size) {
+	bool receive_text_protocol(std::string& protocol) {
 		std::cout << "Odbieranie komunikatu...\n";
-		char* RecvBuf = new char[size];
+		
 
 		std::cout << "Address: " << inet_ntoa(RecvAddr1.sin_addr) << '\n';
 		std::cout << "Port: " << RecvAddr1.sin_port << '\n';
 
 		int RecvAddrSize = sizeof(RecvAddr1);
-		const int iResult = recvfrom(RecvSocket, RecvBuf, size, 0, reinterpret_cast<SOCKADDR *>(&RecvAddr1), &RecvAddrSize);
+		const int iResult = recvfrom(RecvSocket, bufor, sizeof(bufor), 0, reinterpret_cast<SOCKADDR *>(&RecvAddr1), &RecvAddrSize);
 		if (iResult == SOCKET_ERROR) {
 			std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return false;
 		}
+		std::vector<char> d;
+		std::cout << "\nbufor: " << bufor  << "\n";
+		for (int i = 0; i < 1024; i++) {
+			if (bufor[i] != '\0') {
+				d.push_back(bufor[i]);
+
+			}
+			else
+				break;
+			
 
 
-		std::string result;
-		for (unsigned int i = 0; i < size; i++) {
-			result += RecvBuf[i];
+
+
 		}
-		protocol = result;
-		std::cout << "\nResult: " << result << "\n";
+		
+		
 
+		std::string result(d.begin(),d.end());
+		
+		protocol = result;
+		std::cout << "\nResult: " << result <<" dlugosc: " <<"\n";
+		
 		return true;
 	}
 
 	bool send_text_protocol(const TextProtocol& protocol, const int& field) {
 		std::cout << "Wysy³anie komunikatu...\n";
 		std::string sendStr = protocol.to_string(field);
+		
+		std::cout <<"Komunikat "<< sendStr <<"D³ugoœæ komunikatu: " << sendStr.length() << std::endl;
+		char* SendBuf = new char[sendStr.length()+1];
+		for (int i = 0; i < sendStr.length(); i++) {
+			SendBuf[i] = sendStr.at(i);
 
-		std::cout << "D³ugoœæ komunikatu: " << sendStr.length() << std::endl;
 
-		std::cout << "Address: " << inet_ntoa(SendAddr1.sin_addr) << '\n';
-		std::cout << "Port: " << SendAddr1.sin_port << '\n';
-		const int iResult = sendto(SendSocket, sendStr.c_str(), sendStr.length(), 0, (SOCKADDR *)& SendAddr1, sizeof(SendAddr1));
+		}
+		SendBuf[sendStr.length()] = '\0';
+		
+		std::cout << "char: " <<SendBuf << '\n';
+		
+		const int iResult = sendto(SendSocket,SendBuf, sizeof(SendBuf), 0, (SOCKADDR *)& SendAddr1, sizeof(SendAddr1));
 		if (iResult == SOCKET_ERROR) {
 			std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			closesocket(SendSocket);

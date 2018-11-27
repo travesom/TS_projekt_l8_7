@@ -34,7 +34,7 @@ void choose_status(TextProtocol& d, ClientUDP& klient) {
 			std::string temp, temp2;
 			d.SN = 1;
 			d.ST = 'r';
-			d.Length = temp.length();
+			
 			std::cout << "dlugosc komunikatu rozlączenia: " << temp.length() << std::endl;
 			temp2.append(HEAD_LENGTH);
 			temp2.append(std::string(1, d.ST));
@@ -81,6 +81,7 @@ int main()
 	ClientUDP client(IP, Port1, Port2);
 
 	bool stop = false;
+	
 
 	//Pętla nawiązywania sesji
 	while (!stop) {
