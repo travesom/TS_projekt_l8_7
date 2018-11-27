@@ -18,26 +18,24 @@ int main()
 {
 	system("chcp 1250");
 	system("cls");
-	time_t rawtime;
 	int iResult = 0;
 
 	const std::string IP = "127.0.0.1";
-	const unsigned short Port1 = 27014;
-	const unsigned short Port2 = 27015;
+	const unsigned short Port1 = 27015;
+	const unsigned short Port2 = 27014;
 
 	ServerUDP server(IP, Port1, Port2);
 
-	//-----------------------------------------------
-	// Call the recvfrom function to receive datagrams
-	// on the bound socket.
-
-
-	time(&rawtime);
-	TextProtocol d('p', 0, randInt(10, 99), (long int)rawtime);
+	server.receive_text_protocol_1();
 
 	//Wysłanie protokołu
-	server.receive_text_protocol_1();
-	if (!server.send_text_protocol_1(d)) {
+	std::string temp;
+	time_t rawTime;
+	time(&rawTime);
+
+	const TextProtocol d('p', 0, randInt(10, 99), static_cast<long int>(rawTime));
+
+	if (!server.send_text_protocol(d, 0)) {
 		std::cout << "Błąd wysyłania.\n";
 	}
 

@@ -14,36 +14,30 @@ inline int randInt(const int &min, const int &max) {
 
 class ServerUDP : public NodeUDP {
 public:
-	ServerUDP(const std::string& IP, const unsigned short& Port1, const unsigned short& Port2) : NodeUDP(IP, Port1, Port2) {
-		const int iResult = bind(RecvSocket, (SOCKADDR *)& RecvAddr1, sizeof(RecvAddr1));
-		if (iResult != 0) {
-			std::cout << "Bindowanie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
-			return;
-		}
-	};
+	ServerUDP(const std::string& IP, const unsigned short& Port1, const unsigned short& Port2) : NodeUDP(IP, Port1, Port2) {};
 	virtual ~ServerUDP() { WSACleanup(); };
 
-	void send_text_protocol(const std::string& data) {
-		strcpy_s(SendBuf, data.c_str());
-		const int iResult = sendto(SendSocket, SendBuf, BufLen, 0, (SOCKADDR *)& RecvAddr2, sizeof(RecvAddr2));
-		if (iResult == SOCKET_ERROR) {
-			std::cout << "Wysy³anie komunikatów..." << WSAGetLastError() << "\n";
-			closesocket(SendSocket);
-			WSACleanup();
-			return;
-		}
-		std::cout << SendBuf << std::endl;
-	}
+	//void send_text_protocol(const std::string& data) {
+	//	strcpy_s(SendBuf, data.c_str());
+	//	const int iResult = sendto(SendSocket, SendBuf, BufLen, 0, (SOCKADDR *)& RecvAddr2, sizeof(RecvAddr2));
+	//	if (iResult == SOCKET_ERROR) {
+	//		std::cout << "Wysy³anie komunikatów..." << WSAGetLastError() << "\n";
+	//		closesocket(SendSocket);
+	//		WSACleanup();
+	//		return;
+	//	}
+	//	std::cout << SendBuf << std::endl;
+	//}
 
 	void receive_text_protocol_1() {
 
 		std::cout << "Odbieranie komunikatów...\n";
-		const int iResult = recvfrom(RecvSocket, RecvBuf2, 61, 0, (SOCKADDR *)& SenderAddr, &SenderAddrSize);
+		const int iResult = recvfrom(RecvSocket, RecvBuf2, id_message_size, 0, (SOCKADDR *)& SenderAddr, &SenderAddrSize);
 		if (iResult == SOCKET_ERROR) {
 			std::cout << "Odbieranie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return;
 		}
-		std::string temp(RecvBuf2); temp.resize(61);
+		std::string temp(RecvBuf2); temp.resize(id_message_size);
 		std::cout << "\nRecvBuf: " << temp << '\n';
 		std::cout << "D³ugoœæ RecvBuf: " << sizeof(RecvBuf2);
 		std::cout << "D³ugoœæ temp: " << temp.size() << "\n\n";

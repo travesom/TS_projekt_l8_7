@@ -76,7 +76,9 @@ void choose_status(TextProtocol& d, ClientUDP& klient) {
 
 int main()
 {
+	Sleep(1000); //Na końcu usunąć
 	system("chcp 1250");
+	system("cls");
 	//char wybor;
 	time_t rawtime;
 	time(&rawtime);
@@ -100,12 +102,12 @@ int main()
 	//const int BufLen = 1024;
 	//const int RBufLen = 1024;
 	ClientUDP klient(IP, Port, Port2);
-	TextProtocol d('p', 32, 88, 0, 0, static_cast<long int>(rawtime));
+	TextProtocol d('p', 0, 0, rawtime);
 
 	std::cout << d.time << "\n";
 	std::cout << rawtime << "\n";
 
-	if(!klient.send_text_protocol(TextProtocol('p',0,0,rawtime), PROT_ID)){
+	if(!klient.send_text_protocol(d, 0)){
 		std::cout << "Błąd wysyłania.\n";
 	}
 	klient.receive_text_protocol_1(d);
