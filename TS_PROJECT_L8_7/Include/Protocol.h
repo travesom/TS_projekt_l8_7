@@ -142,7 +142,7 @@ public:
 		}
 		iterator = data.find(HEAD_NUM_1);
 		if (iterator != std::string::npos) {
-			auto iterator2= data.find(HEAD_SN);
+			
 
 			for (auto i = iterator + HEAD_NUM_1.length(); i <= iterator + HEAD_NUM_1.length() + 1; i++) {
 				temp += data[i];
@@ -150,6 +150,28 @@ public:
 			number1 = stoi(temp);
 			temp.clear();
 			std::cout << "wynik operacji: " << number1 << '\n';
+		}
+		iterator = data.find(HEAD_NUM_2);
+		if (iterator != std::string::npos) {
+			
+
+			for (auto i = iterator + HEAD_NUM_2.length(); i <= iterator + HEAD_NUM_2.length() + 1; i++) {
+				temp += data[i];
+			}
+			number2 = stoi(temp);
+			temp.clear();
+			std::cout << "2 argument: " << number2 << '\n';
+		}
+		iterator = data.find(HEAD_OP);
+		if (iterator != std::string::npos) {
+
+
+			for (auto i = iterator + HEAD_OP.length(); i <= iterator + HEAD_OP.length() + 1; i++) {
+				temp += data[i];
+			}
+			OP = temp[0];
+			temp.clear();
+			std::cout << "Typ operacji: " << OP << '\n';
 		}
 		
 		//Numer Sekwencyjny

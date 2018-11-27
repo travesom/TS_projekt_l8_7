@@ -93,6 +93,92 @@ public:
 
 			return true;
 		}
+		if (d.ST == 'o') {//sprawdza czy klient chce sie obliczyæ z 2 argumentami
+
+			receive_text_protocol(received);
+			d.from_string(received);
+			receive_text_protocol(received);
+			d.from_string(received);
+			receive_text_protocol(received);
+			d.from_string(received);
+			d.SN = 1;
+			std::cout << d.OP << std::endl;
+			std::cout << d.number1 << std::endl;
+			std::cout << d.number2 << std::endl;
+			
+			if(d.OP='d') {
+				d.number1 = d.number1 + d.number2;
+				d.ST = 'o';
+				if (!send_text_protocol(d, 0)) {
+
+					std::cout << "B³¹d wysy³ania.\n";
+					return false;
+				}
+				if (!send_text_protocol(d, 2)) {
+
+					std::cout << "B³¹d wysy³ania.\n";
+					return false;
+				}
+				return true;
+
+
+			}
+			else if (d.OP = 'o') {
+				d.number1 = d.number1 - d.number2;
+				d.ST = 'o';
+				if (!send_text_protocol(d, 0)) {
+
+					std::cout << "B³¹d wysy³ania.\n";
+					return false;
+				}
+				if (!send_text_protocol(d, 2)) {
+
+					std::cout << "B³¹d wysy³ania.\n";
+					return false;
+				}
+				return true;
+
+
+			}
+			else if (d.OP = 'm') {
+				d.number1 = d.number1 * d.number2;
+				d.ST = 'o';
+				if (!send_text_protocol(d, 0)) {
+
+					std::cout << "B³¹d wysy³ania.\n";
+					return false;
+				}
+				if (!send_text_protocol(d, 2)) {
+
+					std::cout << "B³¹d wysy³ania.\n";
+					return false;
+				}
+				return true;
+
+
+			}
+			else	if (d.OP = 's') {
+				d.number1 = d.number1 / d.number2;
+				d.ST = 'o';
+				if (!send_text_protocol(d, 0)) {
+
+					std::cout << "B³¹d wysy³ania.\n";
+					return false;
+				}
+				if (!send_text_protocol(d, 2)) {
+
+					std::cout << "B³¹d wysy³ania.\n";
+					return false;
+				}
+				return true;
+
+
+			}
+		//	else tu jak blad
+
+
+			return true;
+		}
 
 	
 		return true;
