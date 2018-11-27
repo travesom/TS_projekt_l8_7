@@ -12,6 +12,8 @@
 
 #pragma comment(lib, "Ws2_32.lib")// Link with ws2_32.lib
 
+
+
 int main()
 {
 	system("chcp 1250");
@@ -20,8 +22,8 @@ int main()
 	int iResult = 0;
 
 	const std::string IP = "127.0.0.1";
-	const unsigned short Port1 = 27015;
-	const unsigned short Port2 = 27014;
+	const unsigned short Port1 = 27014;
+	const unsigned short Port2 = 27015;
 
 	ServerUDP server(IP, Port1, Port2);
 
@@ -31,10 +33,11 @@ int main()
 
 
 	time(&rawtime);
-	TextProtocol d('p', 0, randInt(1, 100), (long int)rawtime);
+	TextProtocol d('p', 0, randInt(10, 99), (long int)rawtime);
 
 	//Wysłanie protokołu
-	server.send_text_protocol(d.to_string(PROT_ID));
+	server.receive_text_protocol_1();
+	server.send_text_protocol_1(d);
 
 
 	//-----------------------------------------------

@@ -13,6 +13,7 @@
 #define HEAD_ID "Identyfikator: "
 #define HEAD_OP_ID "Identyfikator operacji: "
 #define HEAD_TIME "Czas: "
+#define HEAD_LENGTH "Dlugosc nastepnego komunikatu: "
 
 /*
  * Znaczenia poszczególnych bitów w bitset<>:
@@ -36,7 +37,7 @@ public:
 	int number1, number2; //watroœæ 1, wartoœæ 2
 	int SN, ID, OP_ID;    //numer sekwencyjny, identyfikator, identyfikator obliczne
 	long int  time;       //czas
-
+	int Lenght;//dlugosc
 	//Konstruktor domyœlny
 	TextProtocol() {};
 

@@ -3,17 +3,74 @@
 
 #pragma warning(disable:4996)
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include "Protocol.h"
+
 #include <winsock2.h>
 #include <iostream>
 #include <string>
 #include <regex>
+#include "Protocol.h"
+#include "Client.h"
+#include <iomanip>
+
 // Link with ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
+long int get_time() {
+	time_t rawtime;
+	time(&rawtime);
+	return (long int)rawtime;
 
-bool check_OP(char ch) {
-	if (ch == 'd')
-		return true;
+};
+void choose_status(TextProtocol& d, ClientUDP& klient) {
+	char wybor;
+	std::cout << "wybierz opcje protokołu: " << std::endl 
+		<< "jesli chcesz rozłączyć wyslij r" << std::endl 
+		<< " jesli chcesz cos obliczycyć wyslij o" << std::endl 
+		<< "jesli chcesz zobaczyc historie wyslij h" << std::endl;
+	std::cin >> wybor;
+	if (wybor == 'r' || wybor == 'o' || wybor == 'h') {
+		if (wybor = 'r') {
+			std::string temp,temp2;
+			d.SN = 1;
+			d.ST = 'r';
+			d.time = get_time();
+			temp = HEAD_TIME; temp.append(std::to_string(d.time));
+			temp.append(HEAD_ST);
+			temp.append(std::string(1, d.ST));
+			temp.append(HEAD_SN);
+			temp.append(std::to_string(d.SN));
+			temp.append(HEAD_ID);
+			temp.append(std::to_string(d.ID));
+			d.time = get_time();
+			d.Lenght = temp.length();
+			std::cout << "dlugosc komunikatu rozlączenia: " << temp.length() <<std::endl;
+			temp2 = HEAD_TIME; temp.append(std::to_string(d.time));
+			temp2.append(HEAD_LENGTH);
+			temp2.append(std::string(1, d.ST));
+			temp2.append(HEAD_SN);
+			temp2.append(std::to_string(d.SN));
+			temp2.append(HEAD_ID);
+			temp2.append(std::to_string(d.ID));
+			std::cout << "dlugosc komunikatu informujacego odlugosci: " << temp2.length() << std::endl;
+			
+
+
+
+	 
+		
+		
+		}
+	
+	
+	
+	
+	 }
+	else { std::cout << "wprowadziles zle dane, podaj dane ponownie" << std :: endl; };
+
+
+
+
+
+
 }
 int main()
 {
@@ -22,158 +79,42 @@ int main()
 	time_t rawtime;
 	time(&rawtime);
 
-	//d.timeinfo = localtime(&rawtime);
+	
 	//printf("Current local time and date: %s", asctime(d.timeinfo));//asc to do stringa daje 
 	std::string temp;
 
 
 
 	//temp = std::to_string(d.liczba1);
-	int iResult;
-	WSADATA wsaData;
+	
 
-	SOCKET SendSocket = INVALID_SOCKET;
-	SOCKET RecvSocket;
-	sockaddr_in RecvAddr;
-	sockaddr_in RecvAddr2;
-	sockaddr_in SenderAddr;
-	int SenderAddrSize = sizeof(SenderAddr);
-	unsigned short Port = 27015;
-	unsigned short Port2 = 27014;
-
+	unsigned short Port = 27014;
+	unsigned short Port2 = 27015;
+	const std::string IP = "127.0.0.1";
 	char SendBuf[1024];
 	char RecvBuf[1024];
 
-	std::cout << sizeof(long int) << "\n";;
+
 	int BufLen = 1024;
 	int RBufLen = 1024;
-
+	ClientUDP klient(IP, Port, Port2);
 	TextProtocol d('p', 32, 88, 0, 0, (long int)rawtime);
 
 	std::cout << d.time << "\n";
 	std::cout << rawtime << "\n";
 
-	strcpy_s(SendBuf, d.to_string(PROT_ID).c_str());
-
-	//----------------------
-	// Initialize Winsock
-	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != NO_ERROR) {
-		std::cout << "WSAStartup failed with error: " << iResult << "\n";
-		return 1;
-	}
-
-	//---------------------------------------------
-	// Create a socket for sending data
-	SendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (SendSocket == INVALID_SOCKET) {
-		std::cout << "socket failed with error: " << WSAGetLastError() << "\n";
-		WSACleanup();
-		return 1;
-	}
-	//---------------------------------------------
-	// Set up the RecvAddr structure with the IP address of
-	// the receiver (in this example case "127.0.0.1")
-	// and the specified port number.
-	RecvAddr.sin_family = AF_INET;
-	RecvAddr.sin_port = htons(Port);
-	RecvAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	//-----------------------------------------------
-	// Create a receiver socket to receive datagrams
-	RecvSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (RecvSocket == INVALID_SOCKET) {
-		std::cout << "socket failed with error " << WSAGetLastError() << "\n";
-		return 1;
-	}
-	//-----------------------------------------------
-	// Bind the socket to any address and the specified port.
-	RecvAddr2.sin_family = AF_INET;
-	RecvAddr2.sin_port = htons(Port2);
-	RecvAddr2.sin_addr.s_addr = htonl(INADDR_ANY);
-
-	//---------------------------------------------
-
-	//---------------------------------------------
-	// Send a datagram to the receiver
-	std::cout << "Nawiązywanie połączenia\n";
-
-	iResult = sendto(SendSocket,
-		SendBuf, BufLen, 0, (SOCKADDR *)& RecvAddr, sizeof(RecvAddr));//time||ST||NS||ID
-	if (iResult == SOCKET_ERROR) {
-		std::cout << "sendto failed with error: " << WSAGetLastError() << "\n";
-		closesocket(SendSocket);
-		WSACleanup();
-		return 1;
-	}
-	//---------------------------------------------
-
-	iResult = bind(RecvSocket, (SOCKADDR *)& RecvAddr2, sizeof(RecvAddr));
-	if (iResult != 0) {
-		std::cout << "bind failed with error " << WSAGetLastError() << "\n";
-		return 1;
-	}
-	iResult = recvfrom(RecvSocket, RecvBuf, BufLen, 0, (SOCKADDR *)& RecvAddr2, &SenderAddrSize);
-	if (iResult == SOCKET_ERROR) {
-		std::cout << "recvfrom failed with error " << WSAGetLastError() << "\n";
-	}
-
-
-	std::cout << "Wiadomowść zwrotna " << RecvBuf << "\n";
-	std::string RecvBufStr = std::string(RecvBuf);
-	std::cout << "String: " << RecvBufStr << "\n";
-	std::string match = HEAD_ID;
-	std::size_t found = (RecvBufStr.find(match));
-	d.ID = stoi(RecvBufStr.substr(found + 15));
-	std::cout << d.ID << "\n";;
-	//-----------------------wysylanie info
+	klient.send_text_protocol_1();
+	klient.receive_text_protocol_1(d);
 	while (true) {
-		do {
-			std::cout << "Wybierz opcje protokołu: " << "\n" << "jeśli chcesz rozłączyć wyślij r" << "\n" << " jeśli chcesz coś obliczyć wyslij o" << "\n" << "jeśli chcesz zobaczyć historię wyślij h" << "\n";
-			std::cin >> wybor;
-		} while (wybor != 'r');
-		if (wybor == 'r' || wybor == 'h' || wybor == 'o') {
-			time(&rawtime);
-			d.time = (long int)rawtime;
-
-			strcpy_s(SendBuf, d.to_string(PROT_ID).c_str());
-			std::cout << SendBuf << "\n";
-			iResult = sendto(SendSocket,
-				SendBuf, BufLen, 0, (SOCKADDR *)& RecvAddr, sizeof(RecvAddr));//time||ST||NS||ID
-			if (iResult == SOCKET_ERROR) {
-				std::cout << "sendto failed with error: " << WSAGetLastError() << "\n";
-				closesocket(SendSocket);
-				WSACleanup();
-				return 1;
-			}
+		choose_status(d,klient);
+		if (d.OP = 'r')break;
 
 
 
-		}
-		else if (wybor == 'o') {
 
 
 
-			break;
-		}
-		else if (wybor == 'h') {
 
-			break;
-
-		}
-
-
-
-	}
-
-
-
-	// When the application is finished sending, close the socket.
-	std::cout << "Finished sending. Closing socket.\n";
-	iResult = closesocket(SendSocket);
-	if (iResult == SOCKET_ERROR) {
-		std::cout << "closesocket failed with error: " << WSAGetLastError() << "\n";
-		WSACleanup();
-		return 1;
 	}
 	//---------------------------------------------
 	// Clean up and quit.
