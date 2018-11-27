@@ -112,7 +112,7 @@ public:
 			temp += data[i];
 		}
 		time.tm_hour = std::stoi(temp);
-		std::cout << "Godzina: " << temp << '\n';
+		//std::cout << "Godzina: " << temp << '\n';
 		temp.clear();
 
 		//Minuty
@@ -120,24 +120,40 @@ public:
 			temp += data[i];
 		}
 		time.tm_min = std::stoi(temp);
-		std::cout << "Minuty: " << temp << '\n';
+		//std::cout << "Minuty: " << temp << '\n';
 		temp.clear();
 
 		//Sekundy
 		for (auto i = iterator + HEAD_TIME.length() + 6; i <= iterator + HEAD_TIME.length() + 7; i++) {
 			temp += data[i];
 		}
-		std::cout << "Sekundy: " << temp << '\n';
+		//std::cout << "Sekundy: " << temp << '\n';
 		time.tm_sec = std::stoi(temp);
 		temp.clear();
 
 		//Operacja
+		
 		iterator = data.find(HEAD_ST);
-		temp = data[iterator + HEAD_ST.length()];
-		ST = temp[0];
-		temp.clear();
-		std::cout << "Status: " << ST << '\n';
+		if (iterator != std::string::npos) {
+			temp = data[iterator + HEAD_ST.length()];
+			ST = temp[0];
+			temp.clear();
+			std::cout << "Status: " << ST << '\n';
+		}
+		iterator = data.find(HEAD_NUM_1);
+		if (iterator != std::string::npos) {
+			auto iterator2= data.find(HEAD_SN);
+
+			for (auto i = iterator + HEAD_NUM_1.length(); i <= iterator + HEAD_NUM_1.length() + 1; i++) {
+				temp += data[i];
+			}
+			number1 = stoi(temp);
+			temp.clear();
+			std::cout << "wynik operacji: " << number1 << '\n';
+		}
+		
 		//Numer Sekwencyjny
+		
 		iterator = data.find(HEAD_SN);
 		//std::cout <<"iterator "<<iterator << '/n';
 

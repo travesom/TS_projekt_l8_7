@@ -71,8 +71,8 @@ public:
 		std::cout << "Odbieranie komunikatu...\n";
 
 
-		std::cout << "Address: " << inet_ntoa(RecvAddr1.sin_addr) << '\n';
-		std::cout << "Port: " << RecvAddr1.sin_port << '\n';
+		//std::cout << "Address: " << inet_ntoa(RecvAddr1.sin_addr) << '\n';
+		//std::cout << "Port: " << RecvAddr1.sin_port << '\n';
 
 		int RecvAddrSize = sizeof(RecvAddr1);
 		const int iResult = recvfrom(RecvSocket, buffer, sizeof(buffer), 0, reinterpret_cast<SOCKADDR *>(&RecvAddr1), &RecvAddrSize);
@@ -81,7 +81,7 @@ public:
 			return false;
 		}
 		std::string result;
-		std::cout << "\nbufor: " << buffer << "\n";
+		std::cout << "\nbufor: " << buffer		 << "\n";
 		for (unsigned int i = 0; i < 1024; i++) {
 			if (buffer[i] != NULL) {
 				result.push_back(buffer[i]);

@@ -21,49 +21,7 @@ long int get_time() {
 
 };
 
-void choose_status(TextProtocol& d, ClientUDP& klient) {
-	char wybor;
-	std::cout << "Wybór opcji protokołu: \n"
-		<< "- Jeśli chcesz rozłączyć wyślij 'r'\n"
-		<< "- Jeśli chcesz coś obliczyć wyślij 'o'\n"
-		<< "- jeśli chcesz zobaczyć historię wyślij 'h'\n";
-	std::cout << "Wpisz swój wybór: ";
-	std::cin >> wybor;
-	if (wybor == 'r' || wybor == 'o' || wybor == 'h') {
-		if (wybor == 'r') {
-			std::string temp, temp2;
-			d.SN = 1;
-			d.ST = 'r';
-			
-			std::cout << "dlugosc komunikatu rozlączenia: " << temp.length() << std::endl;
-			temp2.append(HEAD_LENGTH);
-			temp2.append(std::string(1, d.ST));
-			temp2.append(HEAD_SN);
-			temp2.append(std::to_string(d.SN));
-			temp2.append(HEAD_ID);
-			temp2.append(std::to_string(d.ID));
-			std::cout << "dlugosc komunikatu informujacego odlugosci: " << temp2.length() << std::endl;
 
-
-
-
-
-
-
-		}
-
-
-
-
-	}
-	else { std::cout << "wprowadziles zle dane, podaj dane ponownie" << std::endl; };
-
-
-
-
-
-
-}
 
 
 int main()
@@ -96,10 +54,7 @@ int main()
 		if (answer == "N" || answer == "n") { break; }
 	}
 
-	while (true) {
-		choose_status(d, client);
-		if (d.OP == 'r') { break; }
-	}
+	
 	//---------------------------------------------
 	// Clean up and quit.
 	std::cout << "Kończenie...\n";
