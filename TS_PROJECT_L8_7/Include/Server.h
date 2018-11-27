@@ -4,6 +4,7 @@
 #include <iostream>
 #include "Protocol.h"
 #include <random>
+#include <ctime>
 
 #pragma comment(lib, "Ws2_32.lib")// Link with ws2_32.lib
 
@@ -28,7 +29,7 @@ public: //Tymczasowo
 	int SenderAddrSize = sizeof(SenderAddr);
 
 	char SendBuf[1024];
-	char RecvBuf[1024],revbuf1[61];
+	char RecvBuf[1024], revbuf1[61];
 	int BufLen = 1024;
 
 public:
@@ -56,7 +57,7 @@ public:
 		// Create a socket for sending data
 		SendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (SendSocket == INVALID_SOCKET) {
-			std::cout << "socket failed with error: " << WSAGetLastError() << "\n";
+			std::cout << "socket niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			WSACleanup();
 			return;
 		}
@@ -65,11 +66,11 @@ public:
 		// and the specified port number.
 		RecvAddr2.sin_family = AF_INET;
 		RecvAddr2.sin_port = htons(Port2);
-		RecvAddr2.sin_addr.s_addr = inet_addr(IP.c_str()); 
+		RecvAddr2.sin_addr.s_addr = inet_addr(IP.c_str());
 
 		iResult = bind(RecvSocket, (SOCKADDR *)& RecvAddr, sizeof(RecvAddr));
 		if (iResult != 0) {
-			std::cout << "bind failed with error " << WSAGetLastError() << "\n";
+			std::cout << "Bindowanie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return;
 		}
 	};
@@ -79,7 +80,7 @@ public:
 		strcpy_s(SendBuf, data.c_str());
 		const int iResult = sendto(SendSocket, SendBuf, BufLen, 0, (SOCKADDR *)& RecvAddr2, sizeof(RecvAddr2));
 		if (iResult == SOCKET_ERROR) {
-			std::cout << "sendto failed with error: " << WSAGetLastError() << "\n";
+			std::cout << "Wysy³anie komunikatów..." << WSAGetLastError() << "\n";
 			closesocket(SendSocket);
 			WSACleanup();
 			return;
@@ -88,26 +89,28 @@ public:
 	}
 
 	void receive_text_protocol() {
-		std::cout << "Receiving datagrams...\n";
+		std::cout << "Odbieranie komunikatów...\n";
 		const int iResult = recvfrom(RecvSocket, RecvBuf, BufLen, 0, (SOCKADDR *)& SenderAddr, &SenderAddrSize);
 		if (iResult == SOCKET_ERROR) {
-			std::cout << "recvfrom failed with error " << WSAGetLastError() << "\n";
+			std::cout << "Odbieranie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return;
 		}
-		std::cout << "\nRecvBuf is: " << RecvBuf << "\n\n";
+		std::cout << "\nRecvBuf: " << RecvBuf << "\n\n";
 	}
 	void receive_text_protocol_1() {
-		
-		std::cout << "Receiving datagrams...\n";
-		const int iResult = recvfrom(RecvSocket, revbuf1 , 61, 0, (SOCKADDR *)& SenderAddr, &SenderAddrSize);
+
+		std::cout << "Odbieranie komunikatów...\n";
+		const int iResult = recvfrom(RecvSocket, revbuf1, 61, 0, (SOCKADDR *)& SenderAddr, &SenderAddrSize);
 		if (iResult == SOCKET_ERROR) {
-			std::cout << "recvfrom failed with error " << WSAGetLastError() << "\n";
+			std::cout << "Odbieranie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return;
 		}
 		std::string temp(revbuf1); temp.resize(61);
-		std::cout << "\nRecvBuf is: " << temp << " a wielkosc jego to "<<sizeof(revbuf1)<<"a dlugosc tempa"<<temp.size()<<"\n\n";
+		std::cout << "\nRecvBuf: " << temp << '\n';
+		std::cout << "D³ugoœæ RecvBuf: " << sizeof(revbuf1);
+		std::cout << "D³ugoœæ temp: " << temp.size() << "\n\n";
 	}
-	void send_text_protocol_1(TextProtocol &d) {// wysyla klientow ID
+	bool send_text_protocol_1(TextProtocol &d) {// wysyla klientow ID
 		std::string temp;
 		time_t rawtime;
 		time(&rawtime);
@@ -119,15 +122,15 @@ public:
 		temp.append(std::to_string(d.SN));
 		temp.append(HEAD_ID);
 		temp.append(std::to_string(d.ID));
-		std::cout<<"tresc stringa: " <<temp<< "rozmiar stringa: " << temp.size() << std::endl;
+		std::cout << "Treœæ string: " << temp << ", rozmiar stringa: " << temp.size() << std::endl;
 
 		const int iResult = sendto(SendSocket, temp.c_str(), temp.size(), 0, (SOCKADDR *)& RecvAddr2, sizeof(RecvAddr2));
 		if (iResult == SOCKET_ERROR) {
 			std::cout << "sendto failed with error: " << WSAGetLastError() << "\n";
 			closesocket(SendSocket);
 			WSACleanup();
-			return;
+			return false;
 		}
-		
+		return true;
 	}
 };

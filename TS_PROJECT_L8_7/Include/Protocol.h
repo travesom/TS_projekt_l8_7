@@ -1,6 +1,4 @@
 #pragma once
-#include <time.h>
-#include <stdio.h>
 #include <bitset>
 
 //HEAD od header (nag³ówek)
@@ -37,16 +35,16 @@ public:
 	int number1, number2; //watroœæ 1, wartoœæ 2
 	int SN, ID, OP_ID;    //numer sekwencyjny, identyfikator, identyfikator obliczne
 	long int  time;       //czas
-	int Lenght;//dlugosc
+	int Length;//dlugosc
 	//Konstruktor domyœlny
-	TextProtocol() {};
+	TextProtocol(): OP(0), ST(0), number1(0), number2(0), SN(0), ID(0), OP_ID(0), time(0), Length(0){} ;
 
 	//Konstruktor przyjmuj¹cy wszystkie pola
 	TextProtocol(const char& OP_, const char& ST_, const int& number1_, const int& number2_,
 		const int& NS_, const int& ID_, const int& OP_ID_, const long int& time_)
 		: OP(OP_), ST(ST_), number1(number1_), number2(number2_), SN(NS_), ID(ID_),
-		OP_ID(OP_ID_), time(time_) {}
-	
+		  OP_ID(OP_ID_), time(time_), Length(0){}
+
 	//Konstruktor przyjmuj¹cy pola ID i time
 	TextProtocol(const char& ST_, const int& SN_, const int& ID_, const long int& time_) 
 				 : TextProtocol(NULL, ST_, NULL, NULL, SN_, ID_, NULL, time_){}
@@ -57,7 +55,7 @@ public:
 		: TextProtocol(NULL, ST_, number1_, number2_, SN_, ID_, NULL, time_) {}
 
 
-	virtual ~TextProtocol() {};
+	virtual ~TextProtocol() = default;;
 
 	//Serializacja
 	std::string to_string(const std::bitset<8>& fields) const {

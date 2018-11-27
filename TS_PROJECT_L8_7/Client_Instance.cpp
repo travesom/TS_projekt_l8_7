@@ -23,12 +23,12 @@ long int get_time() {
 void choose_status(TextProtocol& d, ClientUDP& klient) {
 	char wybor;
 	std::cout << "wybierz opcje protokołu: " << std::endl 
-		<< "jesli chcesz rozłączyć wyslij r" << std::endl 
-		<< " jesli chcesz cos obliczycyć wyslij o" << std::endl 
+		<< "jesli chcesz rozłączyć wyślij r" << std::endl 
+		<< " jesli chcesz coś obliczyć wyślij o" << std::endl 
 		<< "jesli chcesz zobaczyc historie wyslij h" << std::endl;
 	std::cin >> wybor;
 	if (wybor == 'r' || wybor == 'o' || wybor == 'h') {
-		if (wybor = 'r') {
+		if (wybor == 'r') {
 			std::string temp,temp2;
 			d.SN = 1;
 			d.ST = 'r';
@@ -41,7 +41,7 @@ void choose_status(TextProtocol& d, ClientUDP& klient) {
 			temp.append(HEAD_ID);
 			temp.append(std::to_string(d.ID));
 			d.time = get_time();
-			d.Lenght = temp.length();
+			d.Length = temp.length();
 			std::cout << "dlugosc komunikatu rozlączenia: " << temp.length() <<std::endl;
 			temp2 = HEAD_TIME; temp.append(std::to_string(d.time));
 			temp2.append(HEAD_LENGTH);
@@ -75,7 +75,7 @@ void choose_status(TextProtocol& d, ClientUDP& klient) {
 int main()
 {
 	system("chcp 1250");
-	char wybor;
+	//char wybor;
 	time_t rawtime;
 	time(&rawtime);
 
@@ -88,22 +88,24 @@ int main()
 	//temp = std::to_string(d.liczba1);
 	
 
-	unsigned short Port = 27014;
-	unsigned short Port2 = 27015;
+	const unsigned short Port = 27014;
+	const unsigned short Port2 = 27015;
 	const std::string IP = "127.0.0.1";
-	char SendBuf[1024];
-	char RecvBuf[1024];
+	//char SendBuf[1024];
+	//char RecvBuf[1024];
 
 
-	int BufLen = 1024;
-	int RBufLen = 1024;
+	//const int BufLen = 1024;
+	//const int RBufLen = 1024;
 	ClientUDP klient(IP, Port, Port2);
-	TextProtocol d('p', 32, 88, 0, 0, (long int)rawtime);
+	TextProtocol d('p', 32, 88, 0, 0, static_cast<long int>(rawtime));
 
 	std::cout << d.time << "\n";
 	std::cout << rawtime << "\n";
 
-	klient.send_text_protocol_1();
+	if(!klient.send_text_protocol(TextProtocol('p',0,0,rawtime), PROT_ID)){
+		std::cout << "Błąd wysyłania.\n";
+	}
 	klient.receive_text_protocol_1(d);
 	while (true) {
 		choose_status(d,klient);
@@ -118,7 +120,7 @@ int main()
 	}
 	//---------------------------------------------
 	// Clean up and quit.
-	std::cout << "Exiting.\n";
+	std::cout << "Kończenie...\n";
 	WSACleanup();
 	system("PAUSE");
 	return 0;

@@ -37,21 +37,23 @@ int main()
 
 	//Wysłanie protokołu
 	server.receive_text_protocol_1();
-	server.send_text_protocol_1(d);
+	if (!server.send_text_protocol_1(d)) {
+		std::cout << "Błąd wysyłania.\n";
+	}
 
 
 	//-----------------------------------------------
 	// Close the socket when finished receiving datagrams
-	std::cout << "Finished receiving. Closing socket.\n";
+	std::cout << "Skończono odbieranie. Zamykanie gniazdka...\n";
 	iResult = closesocket(server.RecvSocket);
 	if (iResult == SOCKET_ERROR) {
-		std::cout << "closesocket failed with error " << WSAGetLastError() << "\n";
+		std::cout << "Zamykanie gniazdka niepowiodło się z błędem: " << WSAGetLastError() << "\n";
 		return 1;
 	}
 
 	//-----------------------------------------------
 	// Clean up and exit.
-	std::cout << "Exiting...\n";
+	std::cout << "Kończenie...\n";
 	system("PAUSE");
 	return 0;
 }
