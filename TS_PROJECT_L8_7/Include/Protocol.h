@@ -46,7 +46,7 @@ class TextProtocol {
 public:
 
 	char OP, ST;          //pole operacji, pole statusu
-	int number1, number2; //watroœæ 1, wartoœæ 2
+	int number1, number2,temp; //watroœæ 1, wartoœæ 2 tymczasowa wartosc do histori
 	int SN, ID, OP_ID;    //numer sekwencyjny, identyfikator, identyfikator obliczne
 	tm  time;   //czas //dlugoœæ
 
@@ -172,6 +172,17 @@ public:
 			OP = temp[0];
 			temp.clear();
 			std::cout << "Typ operacji: " << OP << '\n';
+		}
+		iterator = data.find(HEAD_OP_ID);
+		if (iterator != std::string::npos) {
+
+
+			for (auto i = iterator + HEAD_OP_ID.length(); i <= iterator + HEAD_OP_ID.length() + 1; i++) {
+				temp += data[i];
+			}
+			OP_ID = stoi(temp);
+			temp.clear();
+			std::cout << "wynik operacji: " << OP_ID << '\n';
 		}
 		
 		//Numer Sekwencyjny

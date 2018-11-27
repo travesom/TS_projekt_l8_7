@@ -2,6 +2,7 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "Node.h"
 
+int numer_operacji = 0;
 
 class ClientUDP : public NodeUDP {
 	unsigned int sessionId = 0;
@@ -24,6 +25,7 @@ public:
 		receive_text_protocol(received);
 		d.from_string(received);
 		sessionId = d.ID;
+		numer_operacji = 0;
 		while (!choose_status(d)) {}
 		
 
@@ -79,7 +81,8 @@ public:
 				{ 
 					receive_text_protocol(temp);
 					d.from_string(temp);
-					std::cout << "wynik wynosi: " << d.number1 << std::endl;
+					numer_operacji++;
+					std::cout<<"numer operacji" <<numer_operacji <<"wynik wynosi: " << d.number1 << std::endl;
 					return false;
 				}
 }
@@ -148,9 +151,42 @@ public:
 				{
 					receive_text_protocol(temp);
 					d.from_string(temp);
-					std::cout << "wynik dzia³ania wynosi: " << d.number1 << std::endl;
+					numer_operacji++;
+					std::cout << "numer operacji" << numer_operacji << "wynik dzia³ania wynosi: " << d.number1 << std::endl;
 					return false;
 				}
+			}
+			if (wybor == 'h') {
+				int wynik;
+				std::string temp;
+				int num;
+				std::cout << "podaj numer operacji\n";
+				std::cin>> num;
+				d.OP_ID = num;
+				d.ST = 'h';
+				d.SN = 1;
+				if (!send_text_protocol(d, 0)) {
+					std::cout << "B³¹d wysy³ania.\n";
+
+				}
+				d.SN--;
+				if (!send_text_protocol(d, 4)) {
+					std::cout << "B³¹d wysy³ania Silini.\n";
+
+				}
+				Sleep(100);
+				receive_text_protocol(temp);
+				d.from_string(temp);
+				wynik = d.number1;
+				receive_text_protocol(temp);
+				d.from_string(temp);
+				receive_text_protocol(temp);
+				d.from_string(temp);
+				std::cout << "Operacja numer: " << d.OP_ID << " wynik: " << wynik << " argument1: " << d.number1 << " argument2: " << d.number2 << " typ dzia³anie: " << d.OP << std::endl;
+				
+				
+
+
 			}
 
 
