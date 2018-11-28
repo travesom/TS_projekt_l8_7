@@ -1,8 +1,8 @@
 #pragma once
 #include "Protocol.h"
+#include "Console.hpp"
 #include <winsock2.h>
 #include <iostream>
-#include <vector>
 
 #pragma comment(lib, "Ws2_32.lib")// Link with ws2_32.lib
 
@@ -88,20 +88,32 @@ public:
 			}
 			else { break; }
 		}
+
+		//NULL termination
 		result.push_back(NULL);
 
+		//Spacja na koñcu u³atwi deserializacjê
+		result += ' ';
+
 		protocol = result;
-		std::cout << "\nResult: " << result << "\n";
-		std::cout << "D³ugoœæ: " << result.length() << "\n";
+		//std::cout << "\nResult: " << result << "\n";
+		//std::cout << "D³ugoœæ: " << result.length() << "\n";
 
 		return true;
 	}
 
+	/**
+	* Znaczenia poszczególnych wartoœci int field: \n
+	* 0 - pole ST \n
+	* 1 - pole OP \n
+	* 2 - pole number \n
+	* 3 - pole OP_ID
+	*/
 	bool send_text_protocol(const TextProtocol& protocol, const int& field) {
-		std::cout << "\nWysy³anie komunikatu...\n";
+		//std::cout << "\nWysy³anie komunikatu...\n";
 		std::string sendStr = protocol.to_string(field);
 
-		std::cout << "Komunikat: " << sendStr << "\nD³ugoœæ komunikatu: " << sendStr.length() << std::endl;
+		//std::cout << "Komunikat: " << sendStr << "\nD³ugoœæ komunikatu: " << sendStr.length() << std::endl;
 
 		const int iResult = sendto(SendSocket, sendStr.c_str(), sendStr.length(), 0, (SOCKADDR *)& SendAddr1, sizeof(SendAddr1));
 		if (iResult == SOCKET_ERROR) {

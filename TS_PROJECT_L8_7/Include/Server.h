@@ -8,37 +8,6 @@
 
 int numer_operacji = 0;
 
-class history
-{	public:
-	int wynik,arg1,arg2,numer_op;
-	char operacja[2];//od-odejmowani do-dodawanie mn-mnozenei su-sub(dzielenie) si-silnia
-	history(int a, int b, int c, char d[2],int numer_op) {
-		wynik = a; arg1 = b; arg2 = c; operacja[0] = d[0]; operacja[1] = d[1];;
-		this->numer_op = numer_op;
-
-	}
-	history(int a, int b,  char d[2],int numer_op) {
-		wynik = a; arg1 = b; operacja[0] = d[0]; operacja[1] = d[1];;
-		numer_op = numer_op;
-
-	}
-	void asign(int &a, int &b, std::string &d ) {
-		a = wynik; b = arg1; d=operacja;
-		
-
-	}
-	void asign(int &a, int &b, int &c, std::string &d) {
-		a = wynik; b = arg1; d = operacja; c = arg2;
-
-
-	}
-
-
-
-};
-typedef std::unordered_map<int, std::vector<history>> history_map;
-std::vector<history> hist_vector;
-history_map historia;
 inline int randInt(const int &min, const int &max) {
 	if (max <= min) return min;
 	std::random_device rd;
@@ -46,10 +15,10 @@ inline int randInt(const int &min, const int &max) {
 	const std::uniform_int_distribution<int > d(min, max);
 	return d(gen);
 }
-int silnia(int c){
-	int temp=1;
+int silnia(int c) {
+	int temp = 1;
 	for (int i = 1; i <= c; i++) {
-		temp =temp* i;
+		temp = temp * i;
 
 
 	}
@@ -59,6 +28,16 @@ int silnia(int c){
 
 class ServerUDP : public NodeUDP {
 public:
+	unsigned int currentSessionId;
+	unsigned int operationId = 0;
+
+	//Mapa przechowuj¹ca historie sesji
+	//Kluczem jest identyfikator sesji, a wartoœci¹ tablica odebranych i wys³anych protoko³ów
+	std::unordered_map<unsigned int, std::vector<TextProtocol>> history;
+	
+	//Pomocnicza mapa ostatnich id operacji dla danego id sesji
+	std::unordered_map<unsigned int, unsigned int> lastOperationIds;
+
 	ServerUDP(const std::string& IP, const unsigned short& Port1, const unsigned short& Port2) : NodeUDP(IP, Port1, Port2) {};
 	virtual ~ServerUDP() { WSACleanup(); };
 
@@ -66,104 +45,133 @@ public:
 		//Czekanie na ¿¹danie sesji
 		std::string received;
 		receive_text_protocol(received);
+		TextProtocol receivedProt;
+		receivedProt.from_string(received);
 
 		//Wys³anie ID
-		 TextProtocol d('p', 0, randInt(10, 99), GET_CURRENT_TIME());
+		unsigned int sessionId = receivedProt.ID;
+		//Jeœli klient nie ma identyfikatora sesji
+		if (sessionId == 0) {
+			while (true) {
+				sessionId = randInt(1, 99);
+				if (history.find(sessionId) == history.end()) { break; }
+			}
+		}
+		else { operationId = lastOperationIds[sessionId] + 1; }
+		history[sessionId].push_back(receivedProt);
+		currentSessionId = sessionId;
 
-		if (!send_text_protocol(d, 0)) {
+		TextProtocol protocol("Identyfikator", 0, sessionId, GET_CURRENT_TIME());
+		history[sessionId].push_back(protocol);
+
+		if (!send_text_protocol(protocol, 0)) {
 			std::cout << "B³¹d wysy³ania.\n";
 			return false;
 		}
-		hist_vector.clear();
-		historia[d.ID] = hist_vector;
 		while (true) {
-			if (!session(d)) { break; }
+			if (!session()) { break; }
 		}
 
-
-
+		currentSessionId = 0;
 		return true;
 	}
-	bool session(TextProtocol& d){
+
+	bool session() {
+		TextProtocol protocol;
 		std::string received;
+
 		receive_text_protocol(received);
-		d.from_string(received);
-		if (d.ST=='r') {//sprawdza czy klient chce sie rozl¹czyæ
+		protocol.from_string(received);
+		history[protocol.ID].push_back(protocol); //Dodanie komunikatu do historii
+
+		if (protocol.ST == "Zakonczenie") {//sprawdza czy klient chce sie rozl¹czyæ
 			return false;
-		
-		
-		
 		}
-		if (d.ST == 's') {//sprawdza czy klient chce sie obliczyæ silnie
-			
-			receive_text_protocol(received);
-			d.from_string(received);
-			std::cout << d.ST << std::endl;
-			if(d.number1>9){
-				d.ST = 'e';
-				if (!send_text_protocol(d, 0)) {
-			
-					std::cout << "B³¹d wysy³ania.\n";
-					return false;
+		if (protocol.ST == "Operacja") {//Sprawdza czy klient chce wykonaæ operacjê
+			if(protocol.OP == "Silnia"){//Typ operacji silnia
+				receive_text_protocol(received); //Odebranie komunikatu z numerem sekwencyjnym
+				protocol.from_string(received);
+				history[protocol.ID].push_back(protocol); //Dodanie komunikatu do historii
+				std::cout << protocol.SN << std::endl;
+
+				//Wys³anie identyfikatora dla danych obliczeñ klientowi
+				const TextProtocol sendProtocol("Identyfikator_Obliczen",currentSessionId,operationId,GET_CURRENT_TIME());
+				operationId++;
+				send_text_protocol(sendProtocol, 3);
+
+				//Odbieranie tyle razy, na ile wskazuje numer sekwencyjny
+				for(unsigned int i = 0; i < protocol.SN;i++){
+					receive_text_protocol(received);
+					protocol.from_string(received);
+					history[protocol.ID].push_back(protocol); //Dodanie komunikatu do historii
 				}
-			
+
+				if (protocol.number > 9) {
+					protocol.ST = 'e';
+					if (!send_text_protocol(protocol, 0)) {
+
+						std::cout << "B³¹d wysy³ania.\n";
+						return false;
+					}
+
+					return true;
+				}
+				else {
+					char char_temp[2]{ 's','i' };
+					numer_operacji++;
+					int arg1 = protocol.number;
+					protocol.number = silnia(protocol.number);
+					history[protocol.ID].push_back(protocol);
+
+					protocol.ST = 's';
+					if (!send_text_protocol(protocol, 0)) {
+
+						std::cout << "B³¹d wysy³ania.\n";
+						return false;
+					}
+					if (!send_text_protocol(protocol, 2)) {
+
+						std::cout << "B³¹d wysy³ania.\n";
+						return false;
+					}
+					return true;
+				}
 				return true;
 			}
-			else{
-				char char_temp [2]{ 's','i' };
-				numer_operacji++;
-				int arg1=d.number1;
-				d.number1 = silnia(d.number1);
-				historia[d.ID].push_back(history(d.number1, arg1, char_temp, numer_operacji));
-				
-				d.ST = 's';
-				if (!send_text_protocol(d, 0)) {
-
-					std::cout << "B³¹d wysy³ania.\n";
-					return false;
-				}
-				if (!send_text_protocol(d, 2)) {
-
-					std::cout << "B³¹d wysy³ania.\n";
-					return false;
-				}
-				return true;
-			
-			
-			}
-
-
-			return true;
 		}
-		if (d.ST == 'o') {//sprawdza czy klient chce sie obliczyæ z 2 argumentami
+		//Rzeczy st¹d powinny pójœæ do if'a wy¿ej i do oddzielnych if'ów obok silni
+		if (protocol.ST == "Operacja") {//sprawdza czy klient chce sie obliczyæ z 2 argumentami
 
 			receive_text_protocol(received);
-			d.from_string(received);
+			protocol.from_string(received);
+			history[protocol.ID].push_back(protocol);
 			receive_text_protocol(received);
-			d.from_string(received);
+			protocol.from_string(received);
+			history[protocol.ID].push_back(protocol);
 			receive_text_protocol(received);
-			d.from_string(received);
-			d.SN = 1;
-			std::cout << d.OP << std::endl;
-			std::cout << d.number1 << std::endl;
-			std::cout << d.number2 << std::endl;
-			
-			if(d.OP='d') {
+			protocol.from_string(received);
+			history[protocol.ID].push_back(protocol);
+
+			protocol.SN = 1;
+			std::cout << protocol.OP << std::endl;
+			std::cout << protocol.number << std::endl;
+
+			if (protocol.OP == "protocol") {
 				numer_operacji++;
 				char char_temp[2]{ 'd','o' };
-				int arg1 = d.number1;
-				d.number1 = silnia(d.number1);
-				historia[d.ID].push_back(history(d.number1 + d.number2, arg1, d.number2, char_temp, numer_operacji));
-				
-				
-				d.number1 = d.number1 + d.number2;
-				d.ST = 'o';
-				if (!send_text_protocol(d, 0)) {
+				int arg1 = protocol.number;
+
+				protocol.number = silnia(protocol.number);
+
+
+				protocol.number = protocol.number;
+				protocol.ST = 'o';
+				if (!send_text_protocol(protocol, 0)) {
 
 					std::cout << "B³¹d wysy³ania.\n";
 					return false;
 				}
-				if (!send_text_protocol(d, 2)) {
+				if (!send_text_protocol(protocol, 2)) {
 
 					std::cout << "B³¹d wysy³ania.\n";
 					return false;
@@ -172,21 +180,21 @@ public:
 
 
 			}
-			else if (d.OP = 'o') {
+			else if (protocol.OP == "o") {
 				char char_temp[2]{ 'o','d' };
 				numer_operacji++;
-				int arg1 = d.number1;
-				d.number1 = silnia(d.number1);
-				historia[d.ID].push_back(history(d.number1 - d.number2, arg1, d.number2, char_temp, numer_operacji));
-				
-				d.number1 = d.number1 - d.number2;
-				d.ST = 'o';
-				if (!send_text_protocol(d, 0)) {
+				int arg1 = protocol.number;
+				protocol.number = silnia(protocol.number);
+				//historia[protocol.ID].push_back(history(protocol.number - protocol.number2, arg1, protocol.number2, char_temp, numer_operacji));
+
+				//protocol.number = protocol.number - protocol.number2;
+				protocol.ST = 'o';
+				if (!send_text_protocol(protocol, 0)) {
 
 					std::cout << "B³¹d wysy³ania.\n";
 					return false;
 				}
-				if (!send_text_protocol(d, 2)) {
+				if (!send_text_protocol(protocol, 2)) {
 
 					std::cout << "B³¹d wysy³ania.\n";
 					return false;
@@ -195,21 +203,21 @@ public:
 
 
 			}
-			else if (d.OP = 'm') {
+			else if (protocol.OP == "m") {
 				numer_operacji++;
 				char char_temp[2]{ 'm','n' };
 				numer_operacji++;
-				int arg1 = d.number1;
-				d.number1 = silnia(d.number1);
-				historia[d.ID].push_back(history(d.number1 * d.number2, arg1, d.number2, char_temp, numer_operacji));
-				d.number1 = d.number1 * d.number2;
-				d.ST = 'o';
-				if (!send_text_protocol(d, 0)) {
+				int arg1 = protocol.number;
+				protocol.number = silnia(protocol.number);
+				//historia[protocol.ID].push_back(history(protocol.number * protocol.number2, arg1, protocol.number2, char_temp, numer_operacji));
+				//protocol.number = protocol.number * protocol.number2;
+				protocol.ST = 'o';
+				if (!send_text_protocol(protocol, 0)) {
 
 					std::cout << "B³¹d wysy³ania.\n";
 					return false;
 				}
-				if (!send_text_protocol(d, 2)) {
+				if (!send_text_protocol(protocol, 2)) {
 
 					std::cout << "B³¹d wysy³ania.\n";
 					return false;
@@ -218,21 +226,21 @@ public:
 
 
 			}
-			else	if (d.OP = 's') {
+			else	if (protocol.OP == "s") {
 				numer_operacji++;
 				char char_temp[2]{ 's','u' };
 				numer_operacji++;
-				int arg1 = d.number1;
-				d.number1 = silnia(d.number1);
-				historia[d.ID].push_back(history(d.number1 / d.number2, arg1, d.number2, char_temp, numer_operacji));
-				d.number1 = d.number1 / d.number2;
-				d.ST = 'o';
-				if (!send_text_protocol(d, 0)) {
+				int arg1 = protocol.number;
+				protocol.number = silnia(protocol.number);
+				//historia[protocol.ID].push_back(history(protocol.number / protocol.number2, arg1, protocol.number2, char_temp, numer_operacji));
+				//protocol.number = protocol.number / protocol.number2;
+				protocol.ST = 'o';
+				if (!send_text_protocol(protocol, 0)) {
 
 					std::cout << "B³¹d wysy³ania.\n";
 					return false;
 				}
-				if (!send_text_protocol(d, 2)) {
+				if (!send_text_protocol(protocol, 2)) {
 
 					std::cout << "B³¹d wysy³ania.\n";
 					return false;
@@ -241,56 +249,18 @@ public:
 
 
 			}
-		//	else tu jak blad
+			//	else tu jak blad
 
 
 			return true;
 		}
-		if (d.ST == 'h') {//sprawdza czy klient chce sie obliczyæ silnie
-			int num1, num2,num3;
-			char k='c';
-			std::string typ;
-			receive_text_protocol(received);
-			d.from_string(received);
-			historia.at(d.ID).at(d.OP_ID).asign(num1,num2,num3,typ);
-			d.number1 = num1;
-			d.number2 = num2;
-			if (typ == "do") { k = 'd'; }
-			else if (typ == "od") { k = 'o'; }
-			else if (typ == "si") { k = 's'; }
-			else if (typ == "su") { k = 'i'; }
-			else if (typ == "mn") { k = 'm'; }//dzielnie z nazwa na i
-			d.OP = k;
-			d.SN = 3;
-			if (!send_text_protocol(d, 2)) {
-
-				std::cout << "B³¹d wysy³ania.\n";
-				return false;
-			}
-			d.number1 = num3;
-			d.SN--;
-			if (!send_text_protocol(d, 2)) {
-
-				std::cout << "B³¹d wysy³ania.\n";
-				return false;
-			}
-			d.SN--;
-			if (!send_text_protocol(d, 3)) {
-
-				std::cout << "B³¹d wysy³ania.\n";
-				return false;
-			}
-			d.SN--;
-			if (!send_text_protocol(d, 1)) {
-
-				std::cout << "B³¹d wysy³ania.\n";
-				return false;
-			}
-
-			return true;
+		if (protocol.ST == "Historia") {//Sprawdza czy klient uzyskaæ historiê obliczeñ
+			//Wys³anie klientowi numer sekwencyjny (iloœæ wpisów w historii)
+			TextProtocol sendProt("Numer_Sekwencyjny", history[currentSessionId].size(), currentSessionId, GET_CURRENT_TIME());
+			send_text_protocol(sendProt,0);
 		}
 
-	
+
 		return true;
 	}
 

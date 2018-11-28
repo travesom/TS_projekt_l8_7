@@ -29,5 +29,11 @@
     <ClInclude Include="..\TS_PROJECT_L8_7\Include\Node.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\TS_PROJECT_L8_7\Include\Console.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\TS_PROJECT_L8_7\Include\ThreadSafe.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

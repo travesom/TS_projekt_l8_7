@@ -166,8 +166,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h" />
+    <ClInclude Include="Include\Console.hpp" />
     <ClInclude Include="Include\Node.h" />
     <ClInclude Include="Include\Protocol.h" />
+    <ClInclude Include="Include\ThreadSafe.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
