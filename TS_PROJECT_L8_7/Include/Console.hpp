@@ -162,12 +162,12 @@ public:
 					str.pop_back();
 				}
 			}
-			else if (check_other_than_num(c)) { continue; }
 			else if (str.size() == 0 && c == '-') {
 				cursor_move(1, 0);
 				str += c;
 				continue;
 			}
+			else if (check_other_than_num(c)) { continue; }
 			else if (c >= '0' && c <= '9') {
 				if (str.size() < limit) {
 					cursor_move(1, 0);

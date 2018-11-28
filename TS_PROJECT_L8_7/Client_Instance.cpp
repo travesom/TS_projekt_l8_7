@@ -17,11 +17,10 @@ int main()
 	Sleep(1000); //Na końcu usunąć
 	system("chcp 1250");
 
-	const std::string IP = "127.0.0.1";
-	const unsigned short Port1 = 27014;
-	const unsigned short Port2 = 27015;
+	const u_long IP = inet_addr("127.0.0.1");
+	const unsigned short Port1 = 8888;
 
-	ClientUDP client(IP, Port1, Port2);
+	ClientUDP client(IP, Port1);
 
 	//Pętla nawiązywania sesji
 	const unsigned int boxWidth = 80;
@@ -60,7 +59,7 @@ int main()
 		while (true) {
 
 
-			//Dodawanie wskaźnika wybranej opcji
+			//DODAWANIE wskaźnika wybranej opcji
 			if (choice) {
 				no[0] = ' ';
 				yes[0] = '>';

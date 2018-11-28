@@ -19,12 +19,13 @@ int main()
 	system("chcp 1250");
 	system("cls");
 
-	const std::string IP = "127.0.0.1";
-	const unsigned short Port1 = 27015;
-	const unsigned short Port2 = 27014;
+	const u_long IP = inet_addr("127.0.0.1");
+	const unsigned short Port1 = 8888;
 
-	ServerUDP server(IP, Port1, Port2);
-	server.start_session();
+	ServerUDP server(IP, Port1);
+	while (true) {
+		server.start_session();
+	}
 
 
 	//-----------------------------------------------
