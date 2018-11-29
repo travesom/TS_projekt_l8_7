@@ -154,16 +154,15 @@ public:
 		//Wys³anie argumentów
 		{
 			TextProtocol numberProtocol_1(GET_CURRENT_TIME(), sessionId, "ARGUMENT");
-			numberProtocol_1.number = double(stod(args[0]));
+			numberProtocol_1.number = stod(args[0]);
 			send_text_protocol(numberProtocol_1, SEND_NUMBER);
 
 			//Wys³anie numeru sekwencyjnego
 			send_sequence_number(sessionId, 1);
 
 			TextProtocol numberProtocol_2(GET_CURRENT_TIME(), sessionId, "ARGUMENT");
-			numberProtocol_2.number = -double(stod(args[1]));
+			numberProtocol_2.number = stod(args[1]);
 			send_text_protocol(numberProtocol_2, SEND_NUMBER);
-
 		}
 
 		//Wys³anie numeru sekwencyjnego (koñcowego)

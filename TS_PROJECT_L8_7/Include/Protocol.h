@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 
 inline std::ostream& operator << (std::ostream& os, const tm& time) {
@@ -230,7 +231,6 @@ public:
 					temp += data[i];
 				}
 				number = stod(temp);
-				//std::cout << "wynik operacji: " << number << '\n';
 			}
 		}
 
