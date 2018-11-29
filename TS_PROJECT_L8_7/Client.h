@@ -3,8 +3,6 @@
 #include "Node.h"
 #include <array>
 
-int numer_operacji = 0;
-
 class ClientUDP : public NodeUDP {
 	const unsigned int boxWidth = 80;
 	const unsigned int boxHeight = 20;
@@ -37,7 +35,6 @@ public:
 		if (startProtocol.operation == "IDENTYFIKATOR_SESJI") {
 			sessionId = startProtocol.id;
 		}
-		numer_operacji = 0;
 		action_choice();
 
 
@@ -270,18 +267,25 @@ public:
 	void divide() {
 		//Podawanie argumentów
 		std::array<std::string, 2> args;
-
 		unsigned int argNum = 0;
 		while (true) {
-			std::cout << "\nPodaj argument " << argNum + 1 << " : " << args[argNum];
+			CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+			std::cout << "Podaj argument " << argNum + 1 << " : " << args[argNum];
 			CONSOLE_MANIP::input_string_int_number(args[argNum], 10);
+
+			if(argNum == 1 && stod(args[argNum]) == 0){
+				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
+				std::cout << "Dzielnik nie mo¿e byæ zerem.";
+				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 2);
+				continue;
+			}
 
 			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
 				if (argNum == 1) { break; }
 				argNum++;
 			}
 			else {
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
+				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 				std::cout << "Liczba poza zakresem.";
 				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}

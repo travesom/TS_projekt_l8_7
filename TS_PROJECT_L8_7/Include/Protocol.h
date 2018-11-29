@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include <iostream>
 #include <sstream>
 #include <iomanip>
 
@@ -122,7 +121,22 @@ public:
 
 		//Pola nieobowi¹zkowe
 		if (field == 0) { result += HEAD_SEQNUM; result += std::to_string(sequenceNumber); }
-		else if (field == 1) { result += HEAD_NUMBER + std::to_string(number); }
+		else if (field == 1) {
+			std::string numberStr = std::to_string(number);
+			if (numberStr.find('.') != std::string::npos) {
+				for (unsigned int i = numberStr.size() - 1; i > 0; i--) {
+					if (numberStr[i] == '0') {
+						numberStr.pop_back();
+					}
+					else if (numberStr[i] == '.') {
+						numberStr.pop_back();
+						break;
+					}
+					else { break; }
+				}
+			}
+			result += HEAD_NUMBER + numberStr;
+		}
 		else if (field == 2) { result += HEAD_CALC_ID + std::to_string(calculationId); }
 		else if (field == 3) { result += HEAD_STATUS + status; }
 
@@ -133,6 +147,7 @@ public:
 		return result;
 	}
 
+	//Deserializacja
 	void from_string(const std::string& data) {
 		this->clear();
 		//std::cout << "\nfrom_string\n" << "Dane: " << data << '\n';
@@ -247,6 +262,7 @@ public:
 		}
 	}
 
+	//Zerowanie protoko³u
 	void clear() {
 		operation = "";
 		status = "";
