@@ -239,7 +239,8 @@ public:
 			if (operationProtocol.operation == "ZAKONCZENIE") {//sprawdza czy klient chce sie rozl¹czyæ
 				return true;
 			}
-			else if (operationProtocol.operation == "DODAWANIE") {
+
+			if (operationProtocol.operation == "DODAWANIE") {
 				calculation(&add);
 				calculationId++;
 			}

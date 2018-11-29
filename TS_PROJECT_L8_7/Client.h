@@ -482,12 +482,11 @@ public:
 						continue;
 					}
 				}
-				else if (operationProtocol.operation == "ODEJMOWANIE") {
-					std::cout << (-int(argumentProtocol.number) < 0 ? "(" + std::to_string(-int(argumentProtocol.number)) + ")" : std::to_string(-int(argumentProtocol.number)));
+				else {
+					std::cout << (long long int(argumentProtocol.number) < 0 ? "(" + std::to_string(long long int(argumentProtocol.number)) + ")" : std::to_string(-int(argumentProtocol.number)));
 				}
-				else { std::cout << int(argumentProtocol.number); }
-				std::cout << " = ";
 
+				std::cout << " = ";
 				//Odbieranie numeru sekwencyjnego
 				receive_text_protocol(received);
 				sequenceProtocol = TextProtocol(received);
