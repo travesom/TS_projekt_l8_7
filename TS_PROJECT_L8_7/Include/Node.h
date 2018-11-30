@@ -92,7 +92,7 @@ public:
 	}
 
 	//Zwraca wektor z wszystkimi komunikatami od operacji
-	std::vector<TextProtocol> receive_parts() {
+	std::vector<TextProtocol> receive_messages() {
 		//Kontener na otrzymanie komunikaty
 		std::vector<TextProtocol> receivedMessages;
 

@@ -11,9 +11,11 @@
 #define HEAD_TIME       std::string("Czas: ")
 
 //Statusy
-#define STATUS_SUCCESS      std::string("OPERACJA_UDANA")
-#define STATUS_OUT_OF_RANGE std::string("WYNIK_POZA_ZAKRESEM")
-#define STATUS_FORBIDDEN    std::string("ODMOWA_DOSTEPU")
+#define STATUS_SUCCESS       std::string("OPERACJA_UDANA")
+#define STATUS_OUT_OF_RANGE  std::string("WYNIK_POZA_ZAKRESEM")
+#define STATUS_FORBIDDEN     std::string("ODMOWA_DOSTEPU")
+#define STATUS_NOT_FOUND     std::string("NIE_ZNALEZIONO")
+#define STATUS_HISTORY_EMPTY std::string("HISTORIA_PUSTA")
 
 //Operacje
 #define OP_BEGIN std::string("ROZPOCZECIE")
@@ -25,7 +27,7 @@
 #define OP_MULTP std::string("MNOZENIE")
 #define OP_FACT  std::string("SILNIA")
 
-#define OP_RESULT std::string("WYNIK")
+#define OP_STATUS std::string("STATUS")
 
 #define OP_ID_SESSION     std::string("IDENTYFIKATOR_SESJI")
 #define OP_ID_CALCULATION std::string("IDENTYFIKATOR_OBLICZEN")

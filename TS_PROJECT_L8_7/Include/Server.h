@@ -130,7 +130,7 @@ public:
 	//Obliczenia (typ obliczeñ okreœlany poprzez wskaŸnik funkcji)
 	void calculation(bool(*calc_function)(const double&, const double&, double&), const unsigned int& sessionId) {
 		//Kontener na komunikaty potrzebne do obliczeñ
-		const std::vector<TextProtocol> receivedMessages = receive_parts();
+		const std::vector<TextProtocol> receivedMessages = receive_messages();
 
 		//Przegl¹danie otrzymanych komunikatów
 		std::array<double, 2> args{ 0.0,0.0 };
@@ -150,7 +150,7 @@ public:
 
 		//Dodanie operacji WYNIK do historii i do komunikatów do odes³ania
 		TextProtocol resultMessage(GET_CURRENT_TIME(), sessionId, 0);
-		resultMessage.operation = OP_RESULT;
+		resultMessage.operation = OP_STATUS;
 		history[calculationId].second.push_back(resultMessage);
 		resultMessages.push_back(resultMessage);
 
@@ -211,30 +211,84 @@ public:
 		return result;
 	}
 	void history_by_session_id(const unsigned int& sessionId) {
-		//Kontener z histori¹ dla danego id sesji
-		std::vector<TextProtocol> sessionHistory = get_history_by_session_id(sessionId);
+		if (!history.empty()) {
+			//Kontener z histori¹ dla danego id sesji
+			std::vector<TextProtocol> sessionHistory = get_history_by_session_id(sessionId);
 
-		//Numer sekwencyjny dla wysy³anych komunikatów
-		unsigned int sequenceNumber = sessionHistory.size() - 1;
-		//Zmienna u¿ywana do iterowania po historii
-		unsigned int historyIterator = 0;
-		while (true) {
-			//Wys³anie komunikatu
-			const unsigned int field = sessionHistory[historyIterator].get_field();
-			std::cout << sessionHistory[historyIterator].to_string(field) << '\n';
-			sessionHistory[historyIterator].sequenceNumber = sequenceNumber;
-			send_text_protocol(sessionHistory[historyIterator], field);
+			TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
+			statusProtocol.status = STATUS_SUCCESS;
+			sessionHistory.insert(sessionHistory.begin(), statusProtocol);
 
-			//Zmniejszenie numeru sekwencyjnego i zwiêkszenie iteratora po historii
-			sequenceNumber--;
-			historyIterator++;
-			if (sequenceNumber == -1) { break; }
+			//Numer sekwencyjny dla wysy³anych komunikatów
+			unsigned int sequenceNumber = sessionHistory.size() - 1;
+			//Zmienna u¿ywana do iterowania po historii
+			for (TextProtocol prot : sessionHistory) {
+				//Wys³anie komunikatu
+				prot.sequenceNumber = sequenceNumber;
+				std::cout << prot.to_string(prot.get_field()) << '\n';
+
+				send_text_protocol(prot, prot.get_field());
+
+				//Zmniejszenie numeru sekwencyjnego i zwiêkszenie iteratora po historii
+				sequenceNumber--;
+				if (sequenceNumber < 0) { break; }
+			}
+		}
+		else {
+			TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
+			statusProtocol.status = STATUS_HISTORY_EMPTY;
+			send_text_protocol(statusProtocol, statusProtocol.get_field());
+			std::cout << "Sent: " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
 		}
 	}
 
 	//Historia identyfikatorze obliczeñ
-	void history_by_calc_id(const unsigned int& calcId) {
+	void history_by_calc_id(const unsigned int& sessionId, const unsigned int& calcId) {
+		if (!history.empty()) {
+			if (history.find(calcId) != history.end()) {
+				if (history[calcId].first != sessionId) {
+					TextProtocol operationProtocol(GET_CURRENT_TIME(), sessionId, 1);
+					operationProtocol.operation = OP_STATUS;
+					send_text_protocol(operationProtocol, operationProtocol.get_field());
 
+					TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
+					statusProtocol.status = STATUS_FORBIDDEN;
+					send_text_protocol(statusProtocol, statusProtocol.get_field());
+				}
+				else if (history[calcId].first == sessionId) {
+					int sequenceNumber = history[calcId].second.size() + 1;
+
+					TextProtocol operationProtocol(GET_CURRENT_TIME(), sessionId, sequenceNumber);
+					operationProtocol.operation = OP_STATUS;
+					send_text_protocol(operationProtocol, operationProtocol.get_field());
+					sequenceNumber--;
+
+					TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, sequenceNumber);
+					statusProtocol.status = STATUS_SUCCESS;
+					send_text_protocol(statusProtocol, statusProtocol.get_field());
+					sequenceNumber--;
+
+					for (TextProtocol prot : history[calcId].second) {
+						prot.sequenceNumber = sequenceNumber;
+						send_text_protocol(prot, prot.get_field());
+						sequenceNumber--;
+						if (sequenceNumber < 0) { break; }
+					}
+				}
+			}
+			else {
+				TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
+				statusProtocol.status = STATUS_NOT_FOUND;
+				send_text_protocol(statusProtocol, statusProtocol.get_field());
+				std::cout << "Sent: " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
+			}
+		}
+		else {
+			TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
+			statusProtocol.status = STATUS_HISTORY_EMPTY;
+			send_text_protocol(statusProtocol, statusProtocol.get_field());
+			std::cout << "Sent: " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
+		}
 	}
 
 	bool session() {
@@ -245,6 +299,7 @@ public:
 			TextProtocol operationProtocol(received);
 
 			if (operationProtocol.get_field() == FIELD_OPERATION) {
+				std::cout << "Received (session): " << received << '\n';
 				//Operacje nie do obliczeñ -------------------------------------------------------------
 
 				//Zakoñczenie
@@ -252,12 +307,20 @@ public:
 					return true;
 				}
 				//Wyœwietlenie ca³ej historii dla obecnej
-				else if (operationProtocol.operation == OP_HISTORY_WHOLE) { history_by_session_id(operationProtocol.id); continue; }
+				else if (operationProtocol.operation == OP_HISTORY_WHOLE) {
+					history_by_session_id(operationProtocol.id);
+					continue;
+				}
+				else if (operationProtocol.operation == OP_HISTORY_ID) {
+					receive_text_protocol(received);
+					TextProtocol idProtocol(received);
+					history_by_calc_id(operationProtocol.id, idProtocol.calculationId);
+					continue;
+				}
 
 				//Operacje do obliczeñ -----------------------------------------------------------------
 
 				//Wpisanie operacji do historii
-				std::cout << "Received (session): " << received << '\n';
 				history[calculationId].first = operationProtocol.id;
 				history[calculationId].second.push_back(operationProtocol);
 

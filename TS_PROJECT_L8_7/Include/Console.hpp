@@ -220,7 +220,7 @@ public:
 				}
 			}
 		}
-		if (!str.empty()) { if (str[0] = '-') { cursor_move(1, 0); } }
+		if (!str.empty()) { if (str[0] == '-') { cursor_move(1, 0); } }
 	}
 	static void input_string_letters(std::string &str, const unsigned int &limit) {
 		input_string(str, limit, &check_other_that_alf);
