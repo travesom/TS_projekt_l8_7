@@ -142,6 +142,7 @@ public:
 	static void input_string_digits(std::string &str, const unsigned int &limit) {
 		input_string(str, limit, &check_other_than_num);
 	}
+	//Wprowadzanie liczby typu int (mo¿liwoœæ wprowadzenia '-' jako pierwszy znak)
 	static void input_string_int_number(std::string &str, const unsigned int &limit) {
 		while (true) {
 			cursor_move(-int(str.size()), 0);
@@ -162,23 +163,64 @@ public:
 					str.pop_back();
 				}
 			}
-			else if (str.empty() && c == '-') {
-				cursor_move(1, 0);
-				str += c;
-				continue;
-			}
-			else if (check_other_than_num(c)) { continue; }
+			else if (str.empty() && c == '-') { cursor_move(1, 0); str += c; }
+			else if (check_other_than_num(c)) { /*continue*/ }
 			else if (c >= '0' && c <= '9') {
-				if (str.size() < limit) {
-					cursor_move(1, 0);
-					str += c;
-				}
-				else if(!str.empty() && str[0] == '-' && str.size() == limit){
+				if (str.size() < limit) { cursor_move(1, 0); str += c; }
+				else if (!str.empty() && str[0] == '-' && str.size() == limit) {
 					cursor_move(1, 0);
 					str += c;
 				}
 			}
 		}
+	}
+
+	//Tak jak powy¿ej z dodatkiem nawiasów dla ujemnych liczb
+	static void input_string_int_number_brackets(std::string &str, const unsigned int &limit) {
+		while (true) {
+			if (!str.empty()) {
+				cursor_move(-int(str.size()), 0);
+				if (str[0] != '-') {
+					sync_cout << str << "  ";
+					cursor_move(-2, 0);
+				}
+				else if (str[0] == '-') {
+					if (str.size() > 1) { cursor_move(-1, 0); }
+					sync_cout << '(' << str << ")  ";
+					cursor_move(-3, 0);
+				}
+			}
+			else { sync_cout << "    "; cursor_move(-4, 0); }
+
+			show_console_cursor(true);
+			const char c = _getch();
+			show_console_cursor(false);
+
+			check_alt_f4();
+
+			if (c == 0x0d) { break; }
+			else if (c == 0x08) {	//Jeœli wprowadzono backspace
+				if (!str.empty()) {
+					cursor_move(-1, 0);
+					if (str[0] == '-' && str.size() == 2) { cursor_move(-1, 0); }
+					else if (str[0] == '-' && str.size() == 1) { cursor_move(-1, 0); }
+					str.pop_back();
+				}
+			}
+			else if (str.empty() && c == '-') { cursor_move(1, 0); str += c; }
+			else if (check_other_than_num(c)) { /*continue*/ }
+			else if (c >= '0' && c <= '9') {
+				if (str.size() < limit) {
+					cursor_move(1, 0);
+					str += c;
+				}
+				else if (!str.empty() && str[0] == '-' && str.size() == limit) {
+					cursor_move(1, 0);
+					str += c;
+				}
+			}
+		}
+		if (!str.empty()) { if (str[0] = '-') { cursor_move(1, 0); } }
 	}
 	static void input_string_letters(std::string &str, const unsigned int &limit) {
 		input_string(str, limit, &check_other_that_alf);

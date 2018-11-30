@@ -4,59 +4,120 @@
 #include <array>
 
 class ClientUDP : public NodeUDP {
+private:
 	const unsigned int boxWidth = 80;
 	const unsigned int boxHeight = 20;
 	const std::string actionChoice = "Wybór akcji:";
 	std::string sessionIdInfo = "Identyfikator sesji: " + std::to_string(sessionId);
-public:
-	unsigned int sessionId = 0;
 
-	ClientUDP(const u_long& IP, const unsigned short& Port1) :NodeUDP(IP, Port1) {}
-
-	bool start_session() {
-		TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, 0);
-		startProtocol.operation = OP_BEGIN;
-		//¯¹danie rozpoczêcia sesji
-		if (!send_text_protocol(startProtocol, FIELD_OPERATION)) {
-			std::cout << "B³¹d wysy³ania.\n";
-			system("pause");
-			return false;
-		}
-		//Odbieranie id
-		std::string received;
-		if (!receive_text_protocol(received)) {
-			std::cout << "B³¹d odbierania!\n";
-			system("pause");
-			return false;
-		}
-		startProtocol.from_string(received);
-		if (startProtocol.operation == OP_ID_SESSION) {
-			sessionId = startProtocol.id;
-		}
-
-		action_choice();
-
-		return true;
-	}
-
-	static void arg_input_two(std::array<std::string, 2>& args) {
+	//Wpisywanie 2 argumentów (u¿yte dla dodawania, odejmowania i mno¿enia)
+	static void arg_input_two_add(std::array<std::string, 2>& args) {
 		unsigned int argNum = 0;
+		std::string arg2;
+		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 		while (true) {
-			std::cout << "\nPodaj argument " << argNum + 1 << " : " << args[argNum];
-			CONSOLE_MANIP::input_string_int_number(args[argNum], 10);
-
+			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
+			std::cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " + " + args[1] : "");
+			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
+			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
 			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
 				if (argNum == 1) { break; }
 				argNum++;
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+				std::cout << "                     ";
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 			else {
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-				std::cout << "Liczba poza zakresem.";
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 1);
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+				std::cout << "Liczba poza zakresem!";
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 		}
 	}
 
+	//Wpisywanie 2 argumentów (u¿yte dla dodawania, odejmowania i mno¿enia)
+	static void arg_input_two_subt(std::array<std::string, 2>& args) {
+		unsigned int argNum = 0;
+		std::string arg2;
+		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
+		while (true) {
+			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
+			std::cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " - " + args[1] : "");
+			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
+			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
+			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
+				if (argNum == 1) { break; }
+				argNum++;
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+				std::cout << "                     ";
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
+			}
+			else {
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+				std::cout << "Liczba poza zakresem!";
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
+			}
+		}
+	}
+
+	//Wpisywanie 2 argumentów (u¿yte dla dodawania, odejmowania i mno¿enia)
+	static void arg_input_two_multp(std::array<std::string, 2>& args) {
+		unsigned int argNum = 0;
+		std::string arg2;
+		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
+		while (true) {
+			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
+			std::cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " * " + args[1] : "");
+			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
+			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
+			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
+				if (argNum == 1) { break; }
+				argNum++;
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+				std::cout << "                     ";
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
+			}
+			else {
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+				std::cout << "Liczba poza zakresem!";
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
+			}
+		}
+	}
+
+	//Wpisywanie 2 argumentów dla dzielenia
+	static void arg_input_two_div(std::array<std::string, 2>& args) {
+		unsigned int argNum = 0;
+		std::string arg2;
+		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
+		while (true) {
+			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
+			std::cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " / " + args[1] : "");
+			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
+			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
+
+			if (argNum == 1 && stod(args[argNum]) == 0) {
+				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
+				std::cout << "Dzielnik nie mo¿e byæ zerem.";
+				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 2);
+				continue;
+			}
+			else if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
+				if (argNum == 1) { break; }
+				argNum++;
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+				std::cout << "                     ";
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
+			}
+			else {
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+				std::cout << "Liczba poza zakresem!";
+				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
+			}
+		}
+	}
+
+	//Wpisywanie argumentu dla silni
 	static void arg_input_one_uint(std::array<std::string, 2>& args) {
 		while (true) {
 			std::cout << "Podaj liczbê: " << args[0];
@@ -67,32 +128,6 @@ public:
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-				std::cout << "Liczba poza zakresem.";
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 1);
-			}
-		}
-	}
-
-	static void arg_input_two_div(std::array<std::string, 2>& args) {
-		unsigned int argNum = 0;
-		while (true) {
-			CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-			std::cout << "Podaj argument " << argNum + 1 << " : " << args[argNum];
-			CONSOLE_MANIP::input_string_int_number(args[argNum], 10);
-
-			if (argNum == 1 && stod(args[argNum]) == 0) {
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-				std::cout << "Dzielnik nie mo¿e byæ zerem.";
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 2);
-				continue;
-			}
-
-			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
-				if (argNum == 1) { break; }
-				argNum++;
-			}
-			else {
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 				std::cout << "Liczba poza zakresem.";
 				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
@@ -135,35 +170,27 @@ public:
 
 		//Parsowanie komunikatów
 		for (const TextProtocol& prot : receivedParts) {
-			if (prot.operation == OP_RESULT) {
-				if (operation == OP_FACT) { std::cout << "\nWynik operacji: " << args[0] << "! = "; }
-				else {
-					std::string calcSign;
-					if (operation == OP_ADD) { calcSign = " + "; }
-					else if (operation == OP_SUBT) { calcSign = " - "; }
-					else if (operation == OP_MULTP) { calcSign = " * "; }
-					else if (operation == OP_DIV) { calcSign = " / "; }
-					std::cout << "\nWynik operacji: " << args[0] << calcSign << (stod(args[1]) >= 0.0 ? args[1] : "(" + args[1] + ')') << " = ";
+			if (prot.id == sessionId) {
+				if (prot.operation == OP_RESULT) {
+					std::cout << " = ";
 				}
-			} //Dla tego komunikatu nic nie robimy
-			else if (prot.status == STATUS_SUCCESS) {
-				continue;
-			}
-			else if (prot.get_field() == FIELD_NUMBER) {
-				std::string numberStr = std::to_string(prot.number);
-				double_remove_end_zero(numberStr);
-				std::cout << (prot.number >= 0 ? numberStr : "(" + numberStr + ')');
-			}
-			else if (prot.status == STATUS_OUT_OF_RANGE) { std::cout << "wynik poza zakresem"; }
-			else if (prot.get_field() == FIELD_CALCULATION_ID) {
-				std::cout << " | Identyfikator obliczeñ: " << prot.calculationId << '\n';
+				else if (prot.status == STATUS_SUCCESS) { continue; }
+				else if (prot.get_field() == FIELD_NUMBER) {
+					std::string numberStr = std::to_string(prot.number);
+					double_remove_end_zero(numberStr);
+					std::cout << (prot.number >= 0 ? numberStr : "(" + numberStr + ')');
+				}
+				else if (prot.status == STATUS_OUT_OF_RANGE) { std::cout << "wynik poza zakresem"; }
+				else if (prot.get_field() == FIELD_CALCULATION_ID) {
+					std::cout << " | Identyfikator obliczeñ: " << prot.calculationId << '\n';
+				}
 			}
 		}
 		system("pause");
 	}
 
-	//Ca³a historia
-	void whole_history() {
+	//Historia (dla id sesji)
+	void history_by_session_id() {
 		TextProtocol histProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		histProtocol.operation = OP_HISTORY_WHOLE;
 		send_text_protocol(histProtocol, FIELD_OPERATION);
@@ -175,45 +202,56 @@ public:
 		bool isFactorial = false;
 		std::cout << '\n';
 		for (const TextProtocol& prot : history) {
-			if (prot.operation == OP_FACT) { calcSign = "!"; isFactorial = true; }
-			else if (prot.operation == OP_ADD) { calcSign = " + "; }
-			else if (prot.operation == OP_SUBT) { calcSign = " - "; }
-			else if (prot.operation == OP_MULTP) { calcSign = " * "; }
-			else if (prot.operation == OP_DIV) { calcSign = " / "; }
+			if (prot.id == sessionId) {
+				//Operacje
+				if (prot.get_field() == FIELD_OPERATION) {
+					//Obliczenia
+					if (prot.operation == OP_FACT) { calcSign = "!"; isFactorial = true; }
+					else if (prot.operation == OP_ADD) { calcSign = " + "; }
+					else if (prot.operation == OP_SUBT) { calcSign = " - "; }
+					else if (prot.operation == OP_MULTP) { calcSign = " * "; }
+					else if (prot.operation == OP_DIV) { calcSign = " / "; }
 
-			else if (prot.operation == OP_RESULT) { std::cout << " = "; }
-			else if (prot.status == STATUS_OUT_OF_RANGE) {
-				std::cout << prot.status;
-				argNum = 1;
-			}
-			else if (prot.status == STATUS_SUCCESS) { continue; }
-			else if (prot.get_field() == FIELD_CALCULATION_ID) {
-				std::cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
-			}
+					//Wynik
+					else if (prot.operation == OP_RESULT) { std::cout << " = "; }
+				}
 
-			//Argument 1
-			else if (!isnan(prot.number) && argNum == 1) {
-				std::string numberStr = std::to_string(prot.number);
-				double_remove_end_zero(numberStr);
-				std::cout << numberStr << calcSign;
-				argNum++;
-				if (isFactorial) { argNum++; isFactorial = false; }
-			}
-			//Argument 2
-			else if (!isnan(prot.number) && argNum == 2) {
-				std::string numberStr = std::to_string(prot.number);
-				double_remove_end_zero(numberStr);
-				const double numberDouble = stod(numberStr);
-				std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
-				argNum++;
-			}
-			//Wynik
-			else if (!isnan(prot.number) && argNum == 3) {
-				std::string numberStr = std::to_string(prot.number);
-				double_remove_end_zero(numberStr);
-				const double numberDouble = stod(numberStr);
-				std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
-				argNum = 1;
+				//Status
+				else if (prot.get_field() == FIELD_STATUS && prot.status == STATUS_OUT_OF_RANGE) {
+					std::cout << prot.status;
+					argNum = 1;
+				}
+				else if (prot.get_field() == FIELD_STATUS && prot.status == STATUS_SUCCESS) { continue; }
+
+				//Id obliczeñ
+				else if (prot.get_field() == FIELD_CALCULATION_ID) {
+					std::cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
+				}
+
+				//Argument 1
+				else if (prot.get_field() == FIELD_NUMBER && argNum == 1) {
+					std::string numberStr = std::to_string(prot.number);
+					double_remove_end_zero(numberStr);
+					std::cout << numberStr << calcSign;
+					argNum++;
+					if (isFactorial) { argNum++; isFactorial = false; }
+				}
+				//Argument 2
+				else if (prot.get_field() == FIELD_NUMBER && argNum == 2) {
+					std::string numberStr = std::to_string(prot.number);
+					double_remove_end_zero(numberStr);
+					const double numberDouble = stod(numberStr);
+					std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
+					argNum++;
+				}
+				//Wynik
+				else if (prot.get_field() == FIELD_NUMBER && argNum == 3) {
+					std::string numberStr = std::to_string(prot.number);
+					double_remove_end_zero(numberStr);
+					const double numberDouble = stod(numberStr);
+					std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
+					argNum = 1;
+				}
 			}
 		}
 		std::cout << '\n';
@@ -221,7 +259,7 @@ public:
 	}
 
 	//Historia identyfikatorze obliczeñ
-	void history_by_id() {
+	void history_by_calc_id() {
 
 	}
 
@@ -352,15 +390,15 @@ public:
 			if (choiceCalc == 1) { break;; }
 			//Dodawanie
 			else if (choiceCalc == 2) {
-				calculation(&arg_input_two, OP_ADD);
+				calculation(&arg_input_two_add, OP_ADD);
 			}
 			//Odejmowanie
 			else if (choiceCalc == 3) {
-				calculation(&arg_input_two, OP_SUBT);
+				calculation(&arg_input_two_subt, OP_SUBT);
 			}
 			//Mno¿enie
 			else if (choiceCalc == 4) {
-				calculation(&arg_input_two, OP_MULTP);
+				calculation(&arg_input_two_multp, OP_MULTP);
 			}
 			//Dzielenie
 			else if (choiceCalc == 5) {
@@ -377,7 +415,7 @@ public:
 		int choiceCalc = 1;
 		std::string goBackText = " Powrót.";
 		std::string wholeHistory = " Wyœwietl ca³¹ historiê.";
-		std::string byCalcId = " Wyœwietl równanie o podanym identyfikatorze.";
+		std::string byCalcId = " Wyœwietl obliczenie o podanym identyfikatorze.";
 
 		//Wyœwietlanie obramowania, id sesji i tekstu odnoœnie wyboru
 		CONSOLE_MANIP::clear_console();
@@ -409,16 +447,49 @@ public:
 			else if (CONSOLE_MANIP::check_arrow("DOWN") && choiceCalc < 3) { choiceCalc++; }
 			else if (CONSOLE_MANIP::check_enter()) { break; }
 		}
-		//Przejœcie do wykonywania wybranego dzia³ania
+
+		//Przejœcie do wykonywania wybranej akcji
+
 		//Powrót
 		if (choiceCalc == 1) { return; }
 		//Ca³a historia
 		else if (choiceCalc == 2) {
-			whole_history();
+			history_by_session_id();
 		}
 		//Po identyfikatorze obliczeñ
 		else if (choiceCalc == 3) {
-			history_by_id();
+			history_by_calc_id();
 		}
+	}
+
+public:
+	unsigned int sessionId = 0;
+
+	ClientUDP(const u_long& IP, const unsigned short& Port1) :NodeUDP(IP, Port1) {}
+
+	bool start_session() {
+		TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, 0);
+		startProtocol.operation = OP_BEGIN;
+		//¯¹danie rozpoczêcia sesji
+		if (!send_text_protocol(startProtocol, FIELD_OPERATION)) {
+			std::cout << "B³¹d wysy³ania.\n";
+			system("pause");
+			return false;
+		}
+		//Odbieranie id
+		std::string received;
+		if (!receive_text_protocol(received)) {
+			std::cout << "B³¹d odbierania!\n";
+			system("pause");
+			return false;
+		}
+		startProtocol.from_string(received);
+		if (startProtocol.operation == OP_ID_SESSION) {
+			sessionId = startProtocol.id;
+		}
+
+		action_choice();
+
+		return true;
 	}
 };

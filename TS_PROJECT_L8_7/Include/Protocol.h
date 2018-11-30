@@ -18,10 +18,6 @@ inline const tm GET_CURRENT_TIME() {
 	return time;
 }
 
-//HEAD od header (nag³ówek)
-//Makra do dodawania w funkcji to_string()
-
-
 inline void double_remove_end_zero(std::string& numberStr) {
 	if (numberStr.find('.') != std::string::npos) {
 		for (unsigned int i = numberStr.size() - 1; i > 0; i--) {
@@ -43,42 +39,13 @@ public:
 	unsigned int id;             //Identyfikator sesji
 	unsigned int sequenceNumber; //Numer sekwencyjny (pole obowi¹zkowe)
 
-	/**
-	* Znaczenia operation: \n
-	* OP_BEGIN - rozpoczêcie sesji, \n
-	*
-	* OP_ADD - informacja o obliczeniach, \n
-	* OP_SUBT - informacja o obliczeniach, \n
-	* OP_DIV - informacja o obliczeniach, \n
-	* OP_MULTP - informacja o obliczeniach, \n
-	* OP_FACT - informacja o obliczeniach, \n
-	* \n
-	* OP_ARGUMENT - wys³anie argumentu,\n
-	* OP_RESULT - wys³anie wyniku, \n
-	* \n
-	* OP_HISTORY_WHOLE \n
-	* "HISTORIA_ID" \n
-	* \n
-	* OP_STATUS - wys³anie statusu operacji \n
-	* \n
-	* OP_ID_SESSION - nadawanie identyfikatora sesji \n
-	* OP_ID_CALCULATION - przesy³anie identyfikatora obliczeñ \n
-	* \n
-	* OP_END - roz³¹czenie, \n
-	*/
-	std::string operation;    //Pole operacji
-
-	/**
-	* Mo¿liwe statusy: \n
-	* "WYNIK_POZA_ZAKRESEM" \n
-	* "OPERACJA_UDANA" \n
-	*/
-	std::string status;          //Pole statusu
-	double number;               //Pole liczby
-	unsigned int calculationId;  //Identyfikator obliczeñ
+	std::string operation;      //Pole operacji
+	std::string status;         //Pole statusu
+	double number;              //Pole liczby
+	unsigned int calculationId; //Identyfikator obliczeñ
 
 	//Konstruktor domyœlny
-	TextProtocol() : time(), id(NULL), sequenceNumber(NULL), operation(""),status(""),number(NAN),calculationId(NULL) {};
+	TextProtocol() : time(), id(NULL), sequenceNumber(NULL), operation(""), status(""), number(NAN), calculationId(NULL) {};
 
 	TextProtocol(const tm& time_, const unsigned int& id_, const unsigned int& sequenceNumber_) : TextProtocol() {
 		time = time_;
@@ -91,24 +58,18 @@ public:
 	virtual ~TextProtocol() = default;;
 
 	//Serializacja
-	/**
-	* Znaczenia poszczególnych wartoœci int field: \n
-	* -1 - brak pól nieobowi¹zkowych \n
-	*  0 - pole sequencetial number \n
-	*  1 - pole number \n
-	*  2 - pole calculationId \n
-	*  3 - pole statusu \n
-	*/
 	std::string to_string(const int& field) const {
 		std::string result;
 
 		//Dodanie znacznika czasowego (pole obowi¹zkowe)
-		std::stringstream resultStream;
-		result += HEAD_TIME;
-		resultStream << time;
-		std::string temp;
-		resultStream >> temp;
-		result += temp + ' ';
+		{
+			std::stringstream resultStream;
+			result += HEAD_TIME;
+			resultStream << time;
+			std::string temp;
+			resultStream >> temp;
+			result += temp + ' ';
+		}
 
 		//Dodanie identyfikatora sesji (pole obowi¹zkowe)
 		result += HEAD_SESSION_ID + std::to_string(id) + ' ';
@@ -134,7 +95,7 @@ public:
 		return result;
 	}
 	unsigned int get_field() const {
-		if (!operation.empty())  { return FIELD_OPERATION; }
+		if (!operation.empty()) { return FIELD_OPERATION; }
 		if (calculationId != 0) { return FIELD_CALCULATION_ID; }
 		if (!status.empty()) { return FIELD_STATUS; }
 		if (!isnan(number)) { return FIELD_NUMBER; }
@@ -146,7 +107,6 @@ public:
 		this->clear();
 		auto iterator = data.find(HEAD_TIME);
 		std::string temp;
-
 
 		//Czas (pole obowi¹zkowe)
 		{
@@ -253,19 +213,12 @@ public:
 
 	//Zerowanie protoko³u
 	void clear() {
-		operation = "";
-		status = "";
-		number = NULL;
+		operation.clear();
+		status.clear();
+		number = NAN;
 		sequenceNumber = NULL;
 		id = NULL;
 		calculationId = NULL;
 		time = tm();
 	}
 };
-/*
- * jako ze 4 maks pola to status bedzie informowa³ czy w nastepnym komunikacjie bedzie 1,2
- * argument czy to nawiazywanie  czy konczenie po³¹czenia a ns który to komunikat
- * naziazywanie po³aczenie bedzie wygl¹da³o tak Time|status|sequenceNumber|id gdzie identyfikator to 0 na pocz¹tek a sequenceNumber
- * liczymy ile jescze pakitów powinno sie wys³aæ(czyli przy nawiazywaniu 0 mamy);()time ma rozmiar 4
- * czyli razem komunikat nawiazywania polaczenia ma rozmiar 13
-*/
