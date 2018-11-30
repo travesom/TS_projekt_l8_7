@@ -163,7 +163,7 @@ public:
 		if (!calc_function(args[0], args[1], result)) {
 			//Dodanie statusu
 			TextProtocol statusProtocol(GET_CURRENT_TIME(), currentSessionId, 0);
-			statusProtocol.status = STATUS_CALC_OUT_OF_RANGE;
+			statusProtocol.status = STATUS_OUT_OF_RANGE;
 			history[calculationId].second.push_back(statusProtocol);
 			resultMessages.push_back(statusProtocol);
 		}
@@ -171,7 +171,7 @@ public:
 		else {
 			//Dodanie statusu
 			TextProtocol statusProtocol(GET_CURRENT_TIME(), currentSessionId, 0);
-			statusProtocol.status = STATUS_CALC_SUCCESS;
+			statusProtocol.status = STATUS_SUCCESS;
 			history[calculationId].second.push_back(statusProtocol);
 			resultMessages.push_back(statusProtocol);
 

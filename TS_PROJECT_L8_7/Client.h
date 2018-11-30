@@ -151,7 +151,7 @@ public:
 					std::cout << "\nWynik operacji: " << args[0] << calcSign << (stod(args[1]) >= 0.0 ? args[1] : "(" + args[1] + ')') << " = ";
 				}
 			} //Dla tego komunikatu nic nie robimy
-			else if (prot.status == STATUS_CALC_SUCCESS) {
+			else if (prot.status == STATUS_SUCCESS) {
 				continue;
 			}
 			else if (prot.get_field() == FIELD_NUMBER) {
@@ -159,7 +159,7 @@ public:
 				double_remove_end_zero(numberStr);
 				std::cout << (prot.number >= 0 ? numberStr : "(" + numberStr + ')');
 			}
-			else if (prot.status == STATUS_CALC_OUT_OF_RANGE) { std::cout << "wynik poza zakresem"; }
+			else if (prot.status == STATUS_OUT_OF_RANGE) { std::cout << "wynik poza zakresem"; }
 			else if (prot.get_field() == FIELD_CALCULATION_ID) {
 				std::cout << " | Identyfikator obliczeñ: " << prot.calculationId << '\n';
 			}
@@ -180,19 +180,23 @@ public:
 		bool isFactorial = false;
 		std::cout << '\n';
 		for (const TextProtocol& prot : history) {
-			if (prot.operation == OP_FACT && !prot.operation.empty()) { calcSign = "!"; isFactorial = true; }
-			else if (prot.operation == OP_ADD && !prot.operation.empty()) { calcSign = " + "; }
-			else if (prot.operation == OP_SUBT && !prot.operation.empty()) { calcSign = " - "; }
-			else if (prot.operation == OP_MULTP && !prot.operation.empty()) { calcSign = " * "; }
-			else if (prot.operation == OP_DIV && !prot.operation.empty()) { calcSign = " / "; }
+			if (prot.operation == OP_FACT) { calcSign = "!"; isFactorial = true; }
+			else if (prot.operation == OP_ADD) { calcSign = " + "; }
+			else if (prot.operation == OP_SUBT) { calcSign = " - "; }
+			else if (prot.operation == OP_MULTP) { calcSign = " * "; }
+			else if (prot.operation == OP_DIV) { calcSign = " / "; }
 
 			else if (prot.operation == OP_RESULT) { std::cout << " = "; }
-			else if (prot.status == STATUS_CALC_OUT_OF_RANGE) { std::cout << prot.status; }
-			else if (prot.status == STATUS_CALC_SUCCESS) { continue; }
+			else if (prot.status == STATUS_OUT_OF_RANGE) {
+				std::cout << prot.status;
+				argNum = 1;
+			}
+			else if (prot.status == STATUS_SUCCESS) { continue; }
 			else if (prot.get_field() == FIELD_CALCULATION_ID) {
 				std::cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
 			}
 
+			//Argument 1
 			else if (!isnan(prot.number) && argNum == 1) {
 				std::string numberStr = std::to_string(prot.number);
 				double_remove_end_zero(numberStr);
@@ -200,6 +204,7 @@ public:
 				argNum++;
 				if (isFactorial) { argNum++; isFactorial = false; }
 			}
+			//Argument 2
 			else if (!isnan(prot.number) && argNum == 2) {
 				std::string numberStr = std::to_string(prot.number);
 				double_remove_end_zero(numberStr);
@@ -207,6 +212,7 @@ public:
 				std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
 				argNum++;
 			}
+			//Wynik
 			else if (!isnan(prot.number) && argNum == 3) {
 				std::string numberStr = std::to_string(prot.number);
 				double_remove_end_zero(numberStr);

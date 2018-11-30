@@ -11,8 +11,8 @@
 #define HEAD_TIME       std::string("Czas: ")
 
 //Statusy
-#define STATUS_CALC_SUCCESS      std::string("OPERACJA_UDANA")
-#define STATUS_CALC_OUT_OF_RANGE std::string("WYNIK_POZA_ZAKRESEM")
+#define STATUS_SUCCESS      std::string("OPERACJA_UDANA")
+#define STATUS_OUT_OF_RANGE std::string("WYNIK_POZA_ZAKRESEM")
 
 //Operacje
 #define OP_BEGIN std::string("ROZPOCZECIE")
