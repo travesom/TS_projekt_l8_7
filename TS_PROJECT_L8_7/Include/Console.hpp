@@ -60,7 +60,7 @@ public:
 
 			if (c == 0x0d) { break; }
 			else if (c == 0x08) {	//Jeœli wprowadzono backspace
-				if (str.size() > 0) {
+				if (!str.empty()) {
 					cursor_move(-1, 0);
 					sync_cout << ' ';
 					cursor_move(-1, 0);
@@ -155,14 +155,14 @@ public:
 
 			if (c == 0x0d) { break; }
 			else if (c == 0x08) {	//Jeœli wprowadzono backspace
-				if (str.size() > 0) {
+				if (!str.empty()) {
 					cursor_move(-1, 0);
 					sync_cout << ' ';
 					cursor_move(-1, 0);
 					str.pop_back();
 				}
 			}
-			else if (str.size() == 0 && c == '-') {
+			else if (str.empty() && c == '-') {
 				cursor_move(1, 0);
 				str += c;
 				continue;
@@ -173,7 +173,7 @@ public:
 					cursor_move(1, 0);
 					str += c;
 				}
-				else if(str.size() != 0 && str[0] == '-' && str.size() == limit){
+				else if(!str.empty() && str[0] == '-' && str.size() == limit){
 					cursor_move(1, 0);
 					str += c;
 				}

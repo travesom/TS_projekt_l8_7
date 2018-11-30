@@ -165,6 +165,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\TS_PROJECT_L8_7\Include\Console.hpp" />
+    <ClInclude Include="..\TS_PROJECT_L8_7\Include\Defines.h" />
     <ClInclude Include="..\TS_PROJECT_L8_7\Include\Node.h" />
     <ClInclude Include="..\TS_PROJECT_L8_7\Include\Protocol.h" />
     <ClInclude Include="..\TS_PROJECT_L8_7\Include\Server.h" />

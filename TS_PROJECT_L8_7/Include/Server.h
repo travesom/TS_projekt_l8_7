@@ -37,13 +37,19 @@ public:
 	};
 	virtual ~ServerUDP() { WSACleanup(); };
 
+	//Rozpoczêcie sesji
 	bool start_session() {
 		//Czekanie na ¿¹danie sesji
 		std::string received;
-		receive_text_protocol(received); //Moment czekania
-		const TextProtocol receivedProt(received);
+		TextProtocol receivedProt;
 
-		//Wys³anie id
+		//Czekanie na ¿¹danie rozpoczêcia sesji
+		while (receivedProt.operation != OP_BEGIN) {
+			receive_text_protocol(received);
+			receivedProt = TextProtocol(received);
+		}
+
+		//Wybieranie id sesji
 		unsigned int sessionId = receivedProt.id;
 		//Jeœli klient nie ma identyfikatora sesji
 		if (sessionId == 0) {
@@ -56,19 +62,21 @@ public:
 
 		currentSessionId = sessionId;
 
-		const TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, "IDENTYFIKATOR_SESJI");
+		TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, 0);
+		startProtocol.operation = OP_ID_SESSION;
 
-		if (!send_text_protocol(startProtocol, -1)) {
+		//Wys³anie id
+		if (!send_text_protocol(startProtocol, FIELD_OPERATION)) {
 			std::cout << "B³¹d wysy³ania.\n";
 			return false;
 		}
-		session();
+		else { session(); }
 
 		currentSessionId = 0;
 		return true;
 	}
 
-	//Dodawanie (dziêki ma³emu oszustwu mo¿e byæ tak¿e odejmowaniem)
+	//Dodawanie
 	static bool add(const double& argument1, const double& argument2, double& result) {
 		const double tempResult = argument1 + argument2;
 		if (tempResult <= 2147483647.0 && tempResult >= -2147483647.0) {
@@ -79,7 +87,7 @@ public:
 	}
 
 	//Odejmowanie
-	static bool substract(const double& argument1, const double& argument2, double& result) {
+	static bool subtract(const double& argument1, const double& argument2, double& result) {
 		const double tempResult = argument1 - argument2;
 		if (tempResult <= 2147483647.0 && tempResult >= -2147483647.0) {
 			result = int(tempResult);
@@ -124,14 +132,9 @@ public:
 		return true;
 	}
 
-	//Obliczenia
-	bool calculation(bool(*calc_function)(const double&, const double&, double&)) {
+	//Obliczenia (typ obliczeñ okreœlany poprzez wskaŸnik funkcji)
+	void calculation(bool(*calc_function)(const double&, const double&, double&)) {
 		std::string received;
-
-		//Wys³anie identyfikatora obliczeñ
-		TextProtocol calcIdProtocol(GET_CURRENT_TIME(), currentSessionId, "IDENTYFIKATOR_OBLICZEN");
-		calcIdProtocol.calculationId = calculationId;
-		send_text_protocol(calcIdProtocol, SEND_CALCULATION_ID);
 
 		//Kontener na komunikaty potrzebne do obliczeñ
 		const std::vector<TextProtocol> receivedMessages = receive_parts();
@@ -140,7 +143,7 @@ public:
 		std::array<double, 2> args{ 0.0,0.0 };
 		unsigned int argNum = 0;
 		for (const TextProtocol& prot : receivedMessages) {
-			if (prot.operation == "ARGUMENT") {
+			if (!isnan(prot.number)) {
 				history[calculationId].second.push_back(prot);
 				args[argNum] = prot.number;
 				argNum++;
@@ -149,49 +152,54 @@ public:
 
 		double result; //Wynik
 
+		//Kontener na komunikaty dotycz¹ce wyniku obliczeñ
+		std::vector<TextProtocol> resultMessages;
+		TextProtocol resultMessage(GET_CURRENT_TIME(), currentSessionId, 0);
+		resultMessage.operation = OP_RESULT;
+		history[calculationId].second.push_back(resultMessage);
+		resultMessages.push_back(resultMessage);
+
 		//Jeœli silnia siê nie powiedzie
 		if (!calc_function(args[0], args[1], result)) {
-			//Wys³anie numeru sekwencyjnego
-			send_sequence_number(currentSessionId, 1);
-
-			//Wysy³anie statusu
-			TextProtocol statusProtocol(GET_CURRENT_TIME(), currentSessionId, "STATUS");
+			//Dodanie statusu
+			TextProtocol statusProtocol(GET_CURRENT_TIME(), currentSessionId, 0);
 			statusProtocol.status = STATUS_CALC_OUT_OF_RANGE;
-			send_text_protocol(statusProtocol, SEND_STATUS);
 			history[calculationId].second.push_back(statusProtocol);
-
-			//Wys³anie numeru sekwencyjnego
-			send_sequence_number(currentSessionId, 0);
-
-			return false;
+			resultMessages.push_back(statusProtocol);
 		}
 		//Jeœli silnia siê powiedzie
 		else {
-			//Wys³anie numeru sekwencyjnego
-			send_sequence_number(currentSessionId, 2);
-
-			//Wysy³anie statusu
-			TextProtocol statusProtocol(GET_CURRENT_TIME(), currentSessionId, "STATUS");
+			//Dodanie statusu
+			TextProtocol statusProtocol(GET_CURRENT_TIME(), currentSessionId, 0);
 			statusProtocol.status = STATUS_CALC_SUCCESS;
-			send_text_protocol(statusProtocol, SEND_STATUS);
 			history[calculationId].second.push_back(statusProtocol);
+			resultMessages.push_back(statusProtocol);
 
-			//Wys³anie numeru sekwencyjnego
-			send_sequence_number(currentSessionId, 1);
-
-			//Wys³anie wyniku
-			TextProtocol resultProtocol(GET_CURRENT_TIME(), currentSessionId, "WYNIK");
+			//Dodanie wyniku
+			TextProtocol resultProtocol(GET_CURRENT_TIME(), currentSessionId, 0);
 			resultProtocol.number = result;
-			send_text_protocol(resultProtocol, SEND_NUMBER);
 			history[calculationId].second.push_back(resultProtocol);
-
-			//Wys³anie numeru sekwencyjnego
-			send_sequence_number(currentSessionId, 0);
+			resultMessages.push_back(resultProtocol);
 		}
-		return true;
+
+		//Dodanie identyfikatora obliczeñ
+		TextProtocol calcIdProtocol(GET_CURRENT_TIME(), currentSessionId, 0);
+		calcIdProtocol.calculationId = calculationId;
+		history[calculationId].second.push_back(calcIdProtocol);
+		resultMessages.push_back(calcIdProtocol);
+
+		unsigned int sequenceNumber = resultMessages.size() - 1;
+		std::cout << "\nWysy³anie wyniku...\n";
+		for (TextProtocol prot : resultMessages) {
+			unsigned int sendField = -1;
+			prot.sequenceNumber = sequenceNumber;
+			std::cout << "Sent: " << prot.to_string(prot.get_field()) << '\n';
+			send_text_protocol(prot, prot.get_field());
+			sequenceNumber--;
+		}
 	}
 
-	//Historia
+	//Historia (dla id sesji)
 	std::vector<TextProtocol> get_history_by_session_id(const unsigned int& sessionId) {
 		std::vector<TextProtocol> result;
 
@@ -205,21 +213,17 @@ public:
 		return result;
 	}
 	void whole_history() {
-		unsigned int sequenceNumber = 0;
 		std::vector<TextProtocol> sessionHistory = get_history_by_session_id(currentSessionId);
-		send_sequence_number(currentSessionId, sessionHistory.size() - sequenceNumber);
+		unsigned int sequenceNumber = sessionHistory.size() - 1;
+		unsigned int historyIterator = 0;
 		while (true) {
-			int field = SEND_NO_ADDITIONAL;
-			if (sessionHistory[sequenceNumber].operation == "STATUS") { field = SEND_STATUS; }
-			else if (sessionHistory[sequenceNumber].operation == "ARGUMENT") { field = SEND_NUMBER; }
-			else if (sessionHistory[sequenceNumber].operation == "WYNIK") { field = SEND_NUMBER; }
+			std::cout << sessionHistory[historyIterator].to_string(sessionHistory[historyIterator].get_field()) << '\n';
+			sessionHistory[historyIterator].sequenceNumber = sequenceNumber;
+			send_text_protocol(sessionHistory[historyIterator], sessionHistory[historyIterator].get_field());
 
-			std::cout << sessionHistory[sequenceNumber].to_string(field) << '\n';
-			send_text_protocol(sessionHistory[sequenceNumber], field);
-
-			sequenceNumber++;
-			send_sequence_number(currentSessionId, sessionHistory.size() - sequenceNumber);
-			if (sequenceNumber == sessionHistory.size()) { break; }
+			sequenceNumber--;
+			historyIterator++;
+			if (sequenceNumber == -1) { break; }
 		}
 	}
 
@@ -230,37 +234,37 @@ public:
 
 			receive_text_protocol(received);
 			operationProtocol.from_string(received);
-			if (operationProtocol.operation != "HISTORIA_CALA" && operationProtocol.operation != "ZAKONCZENIE") {
+
+			if (operationProtocol.operation == OP_END) {//sprawdza czy klient chce sie rozl¹czyæ
+				return true;
+			}
+
+			if (operationProtocol.operation != OP_HISTORY_WHOLE) {
 				std::cout << "Received (session): " << received << '\n';
 				history[calculationId].first = currentSessionId;
 				history[calculationId].second.push_back(operationProtocol);
 			}
-
-			if (operationProtocol.operation == "ZAKONCZENIE") {//sprawdza czy klient chce sie rozl¹czyæ
-				return true;
-			}
-
-			if (operationProtocol.operation == "DODAWANIE") {
+			if (operationProtocol.operation == OP_ADD) {
 				calculation(&add);
 				calculationId++;
 			}
-			else if (operationProtocol.operation == "ODEJMOWANIE") {
-				calculation(&substract);
+			else if (operationProtocol.operation == OP_SUBT) {
+				calculation(&subtract);
 				calculationId++;
 			}
-			else if (operationProtocol.operation == "MNOZENIE") {
+			else if (operationProtocol.operation == OP_MULTP) {
 				calculation(&multiply);
 				calculationId++;
 			}
-			else if (operationProtocol.operation == "DZIELENIE") {
+			else if (operationProtocol.operation == OP_DIV) {
 				calculation(&divide);
 				calculationId++;
 			}
-			else if (operationProtocol.operation == "SILNIA") {
+			else if (operationProtocol.operation == OP_FACT) {
 				calculation(&factorial);
 				calculationId++;
 			}
-			else if (operationProtocol.operation == "HISTORIA_CALA") {
+			else if (operationProtocol.operation == OP_HISTORY_WHOLE) {
 				whole_history();
 			}
 		}

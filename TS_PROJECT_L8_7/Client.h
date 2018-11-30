@@ -17,9 +17,10 @@ public:
 	virtual ~ClientUDP() { WSACleanup(); }
 
 	bool start_session() {
-		TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, "Rozpoczecie");
+		TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, 0);
+		startProtocol.operation = OP_BEGIN;
 		//¯¹danie rozpoczêcia sesji
-		if (!send_text_protocol(startProtocol, -1)) {
+		if (!send_text_protocol(startProtocol, FIELD_OPERATION)) {
 			std::cout << "B³¹d wysy³ania.\n";
 			system("pause");
 			return false;
@@ -32,20 +33,16 @@ public:
 			return false;
 		}
 		startProtocol.from_string(received);
-		if (startProtocol.operation == "IDENTYFIKATOR_SESJI") {
+		if (startProtocol.operation == OP_ID_SESSION) {
 			sessionId = startProtocol.id;
 		}
-		action_choice();
 
+		action_choice();
 
 		return true;
 	}
 
-	//Dodawanie
-	void add() {
-		//Podawanie argumentów
-		std::array<std::string, 2> args;
-
+	static void arg_input_two(std::array<std::string, 2>& args) {
 		unsigned int argNum = 0;
 		while (true) {
 			std::cout << "\nPodaj argument " << argNum + 1 << " : " << args[argNum];
@@ -61,73 +58,15 @@ public:
 				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 		}
-
-		//Wys³anie komunikatuu z operacj¹
-		const TextProtocol calcProtocol(GET_CURRENT_TIME(), sessionId, "DODAWANIE");
-		send_text_protocol(calcProtocol, SEND_NO_ADDITIONAL);
-
-		//Odebranie komunikatu z id obliczeñ
-		std::string received;
-		receive_text_protocol(received);
-		const TextProtocol calcIdProtocol(received);
-		if (calcIdProtocol.operation == "IDENTYFIKATOR_OBLICZEN") {
-			std::cout << "\nIdentyfikator obliczen: " << calcIdProtocol.calculationId << '\n';
-		}
-
-		//Wys³anie numeru sekwencyjnego (pocz¹tkowego)
-		send_sequence_number(sessionId, 2);
-
-		//Wys³anie argumentów
-		{
-			TextProtocol numberProtocol_1(GET_CURRENT_TIME(), sessionId, "ARGUMENT");
-			numberProtocol_1.number = double(stod(args[0]));
-			send_text_protocol(numberProtocol_1, SEND_NUMBER);
-
-			//Wys³anie numeru sekwencyjnego
-			send_sequence_number(sessionId, 1);
-
-			TextProtocol numberProtocol_2(GET_CURRENT_TIME(), sessionId, "ARGUMENT");
-			numberProtocol_2.number = double(stod(args[1]));
-			send_text_protocol(numberProtocol_2, SEND_NUMBER);
-
-		}
-
-		//Wys³anie numeru sekwencyjnego (koñcowego)
-		send_sequence_number(sessionId, 0);
-
-		//Otrzymanie wiadomoœci zwrotnej
-		std::vector<TextProtocol>receivedParts = receive_parts();
-
-		//Parsowanie komunikatów
-		for (const TextProtocol& prot : receivedParts) {
-			if (prot.operation == "STATUS" && prot.status == STATUS_CALC_OUT_OF_RANGE) {
-				std::cout << "\nWynik poza zakresem.\n";
-				system("pause");
-				break;
-			}
-			else if (prot.operation == "STATUS" && prot.status == STATUS_CALC_SUCCESS) {
-				std::cout << "\nOperacja powiod³a siê.\n";
-			}
-			else if (prot.operation == "WYNIK") {
-				std::cout << "\nWynik operacji: " << args[0] << " + " << args[1] << " = " << prot.number << '\n';
-				system("pause");
-			}
-		}
 	}
 
-	//Odejmowanie
-	void substract() {
-		//Podawanie argumentów
-		std::array<std::string, 2> args;
-
-		unsigned int argNum = 0;
+	static void arg_input_one_uint(std::array<std::string, 2>& args) {
 		while (true) {
-			std::cout << "\nPodaj argument " << argNum + 1 << " : " << args[argNum];
-			CONSOLE_MANIP::input_string_int_number(args[argNum], 10);
+			std::cout << "Podaj liczbê: " << args[0];
+			CONSOLE_MANIP::input_string_digits(args[0], 10);
 
-			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
-				if (argNum == 1) { break; }
-				argNum++;
+			if (stod(args[0]) < 4294967295) {
+				break;
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
@@ -135,144 +74,16 @@ public:
 				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 		}
-
-		//Wys³anie komunikatuu z operacj¹
-		const TextProtocol calcProtocol(GET_CURRENT_TIME(), sessionId, "ODEJMOWANIE");
-		send_text_protocol(calcProtocol, SEND_NO_ADDITIONAL);
-
-		//Odebranie komunikatu z id obliczeñ
-		std::string received;
-		receive_text_protocol(received);
-		const TextProtocol calcIdProtocol(received);
-		if (calcIdProtocol.operation == "IDENTYFIKATOR_OBLICZEN") {
-			std::cout << "\nIdentyfikator obliczen: " << calcIdProtocol.calculationId << '\n';
-		}
-
-		//Wys³anie numeru sekwencyjnego (pocz¹tkowego)
-		send_sequence_number(sessionId, 2);
-
-		//Wys³anie argumentów
-		{
-			TextProtocol numberProtocol_1(GET_CURRENT_TIME(), sessionId, "ARGUMENT");
-			numberProtocol_1.number = stod(args[0]);
-			send_text_protocol(numberProtocol_1, SEND_NUMBER);
-
-			//Wys³anie numeru sekwencyjnego
-			send_sequence_number(sessionId, 1);
-
-			TextProtocol numberProtocol_2(GET_CURRENT_TIME(), sessionId, "ARGUMENT");
-			numberProtocol_2.number = stod(args[1]);
-			send_text_protocol(numberProtocol_2, SEND_NUMBER);
-		}
-
-		//Wys³anie numeru sekwencyjnego (koñcowego)
-		send_sequence_number(sessionId, 0);
-
-		//Otrzymanie wiadomoœci zwrotnej
-		std::vector<TextProtocol>receivedParts = receive_parts();
-
-		//Parsowanie komunikatów
-		for (const TextProtocol& prot : receivedParts) {
-			if (prot.operation == "STATUS" && prot.status == STATUS_CALC_OUT_OF_RANGE) {
-				std::cout << "\nWynik poza zakresem.\n";
-				system("pause");
-				break;
-			}
-			else if (prot.operation == "STATUS" && prot.status == STATUS_CALC_SUCCESS) {
-				std::cout << "\nOperacja powiod³a siê.\n";
-			}
-			else if (prot.operation == "WYNIK") {
-				std::cout << "\nWynik operacji: " << args[0] << " - " << args[1] << " = " << prot.number << '\n';
-				system("pause");
-			}
-		}
 	}
 
-	//Mno¿enie
-	void multiply() {
-		//Podawanie argumentów
-		std::array<std::string, 2> args;
-
-		unsigned int argNum = 0;
-		while (true) {
-			std::cout << "\nPodaj argument " << argNum + 1 << " : " << args[argNum];
-			CONSOLE_MANIP::input_string_int_number(args[argNum], 10);
-
-			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
-				if (argNum == 1) { break; }
-				argNum++;
-			}
-			else {
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-				std::cout << "Liczba poza zakresem.";
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 1);
-			}
-		}
-
-		//Wys³anie komunikatuu z operacj¹
-		const TextProtocol calcProtocol(GET_CURRENT_TIME(), sessionId, "MNOZENIE");
-		send_text_protocol(calcProtocol, SEND_NO_ADDITIONAL);
-
-		//Odebranie komunikatu z id obliczeñ
-		std::string received;
-		receive_text_protocol(received);
-		const TextProtocol calcIdProtocol(received);
-		if (calcIdProtocol.operation == "IDENTYFIKATOR_OBLICZEN") {
-			std::cout << "\nIdentyfikator obliczen: " << calcIdProtocol.calculationId << '\n';
-		}
-
-		//Wys³anie numeru sekwencyjnego (pocz¹tkowego)
-		send_sequence_number(sessionId, 2);
-
-		//Wys³anie argumentów
-		{
-			TextProtocol numberProtocol_1(GET_CURRENT_TIME(), sessionId, "ARGUMENT");
-			numberProtocol_1.number = stod(args[0]);
-			send_text_protocol(numberProtocol_1, SEND_NUMBER);
-
-			//Wys³anie numeru sekwencyjnego
-			send_sequence_number(sessionId, 1);
-
-			TextProtocol numberProtocol_2(GET_CURRENT_TIME(), sessionId, "ARGUMENT");
-			numberProtocol_2.number = double(stod(args[1]));
-			send_text_protocol(numberProtocol_2, SEND_NUMBER);
-
-		}
-
-		//Wys³anie numeru sekwencyjnego (koñcowego)
-		send_sequence_number(sessionId, 0);
-
-		//Otrzymanie wiadomoœci zwrotnej
-		std::vector<TextProtocol>receivedParts = receive_parts();
-
-		//Parsowanie komunikatów
-		for (const TextProtocol& prot : receivedParts) {
-			if (prot.operation == "STATUS" && prot.status == STATUS_CALC_OUT_OF_RANGE) {
-				std::cout << "\nWynik poza zakresem.\n";
-				system("pause");
-				break;
-			}
-			else if (prot.operation == "STATUS" && prot.status == STATUS_CALC_SUCCESS) {
-				std::cout << "\nOperacja powiod³a siê.\n";
-			}
-			else if (prot.operation == "WYNIK") {
-				std::cout << "\nWynik operacji: " << args[0] << " * " << args[1] << " = " << int(prot.number) << '\n';
-				system("pause");
-			}
-		}
-	}
-
-	//Dzielenie
-	void divide() {
-		//Podawanie argumentów
-		std::array<std::string, 2> args;
+	static void arg_input_two_div(std::array<std::string, 2>& args) {
 		unsigned int argNum = 0;
 		while (true) {
 			CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 			std::cout << "Podaj argument " << argNum + 1 << " : " << args[argNum];
 			CONSOLE_MANIP::input_string_int_number(args[argNum], 10);
 
-			if(argNum == 1 && stod(args[argNum]) == 0){
+			if (argNum == 1 && stod(args[argNum]) == 0) {
 				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 				std::cout << "Dzielnik nie mo¿e byæ zerem.";
 				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 2);
@@ -289,229 +100,119 @@ public:
 				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 		}
-
-		//Wys³anie komunikatuu z operacj¹
-		const TextProtocol calcProtocol(GET_CURRENT_TIME(), sessionId, "DZIELENIE");
-		send_text_protocol(calcProtocol, SEND_NO_ADDITIONAL);
-
-		//Odebranie komunikatu z id obliczeñ
-		std::string received;
-		receive_text_protocol(received);
-		const TextProtocol calcIdProtocol(received);
-		if (calcIdProtocol.operation == "IDENTYFIKATOR_OBLICZEN") {
-			std::cout << "\nIdentyfikator obliczen: " << calcIdProtocol.calculationId << '\n';
-		}
-
-		//Wys³anie numeru sekwencyjnego (pocz¹tkowego)
-		send_sequence_number(sessionId, 2);
-
-		//Wys³anie argumentów
-		{
-			TextProtocol numberProtocol_1(GET_CURRENT_TIME(), sessionId, "ARGUMENT");
-			numberProtocol_1.number = stod(args[0]);
-			send_text_protocol(numberProtocol_1, SEND_NUMBER);
-
-			//Wys³anie numeru sekwencyjnego
-			send_sequence_number(sessionId, 1);
-
-			TextProtocol numberProtocol_2(GET_CURRENT_TIME(), sessionId, "ARGUMENT");
-			numberProtocol_2.number = double(stod(args[1]));
-			send_text_protocol(numberProtocol_2, SEND_NUMBER);
-
-		}
-
-		//Wys³anie numeru sekwencyjnego (koñcowego)
-		send_sequence_number(sessionId, 0);
-
-		//Otrzymanie wiadomoœci zwrotnej
-		std::vector<TextProtocol>receivedParts = receive_parts();
-
-		//Parsowanie komunikatów
-		for (const TextProtocol& prot : receivedParts) {
-			if (prot.operation == "STATUS" && prot.status == STATUS_CALC_OUT_OF_RANGE) {
-				std::cout << "\nWynik poza zakresem.\n";
-				system("pause");
-				break;
-			}
-			else if (prot.operation == "STATUS" && prot.status == STATUS_CALC_SUCCESS) {
-				std::cout << "\nOperacja powiod³a siê.\n";
-			}
-			else if (prot.operation == "WYNIK") {
-				std::cout << "\nWynik operacji: " << args[0] << " / " << args[1] << " = " << prot.number << '\n';
-				system("pause");
-			}
-		}
 	}
 
-	//Silnia
-	void factorial() {
-		//Podawanie argumentu
-		std::string arg;
-		while (true) {
-			std::cout << "Podaj liczbê: " << arg;
-			CONSOLE_MANIP::input_string_digits(arg, 10);
+	//Wysy³anie ¿¹dania obliczenia (zale¿ne od podanej funkcji
+	void calculation(void(*argInputFunc)(std::array<std::string, 2>&), const std::string& operation) {
+		//Podawanie argumentów
+		std::array<std::string, 2> args{ "","" };
 
-			if (stod(arg) < 4294967295) {
-				break;
-			}
-			else {
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-				std::cout << "Liczba poza zakresem.";
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 1);
-			}
+		argInputFunc(args);
+
+		unsigned int argNum = 0;
+		for (const std::string& arg : args) {
+			if (!args[argNum].empty()) { argNum++; }
 		}
+
+		unsigned int sequenceNumber = argNum;
 
 		//Wys³anie komunikatuu z operacj¹
-		const TextProtocol calcProtocol(GET_CURRENT_TIME(), sessionId, "SILNIA");
-		send_text_protocol(calcProtocol, SEND_NO_ADDITIONAL);
+		TextProtocol calcProtocol(GET_CURRENT_TIME(), sessionId, sequenceNumber);
+		calcProtocol.operation = operation;
+		send_text_protocol(calcProtocol, FIELD_OPERATION);
+		sequenceNumber--;
 
-		//Odebranie komunikatu z id obliczeñ
-		{
-			std::string received;
-			receive_text_protocol(received);
-			const TextProtocol calcIdProtocol(received);
-			if (calcIdProtocol.operation == "IDENTYFIKATOR_OBLICZEN") {
-				std::cout << "\nIdentyfikator obliczen: " << calcIdProtocol.calculationId << '\n';
+		//Wys³anie argumentów
+		unsigned int argsIterator = 0;
+		for (const std::string& arg : args) {
+			if (!arg.empty()) {
+				TextProtocol numberProtocol(GET_CURRENT_TIME(), sessionId, sequenceNumber);
+				numberProtocol.number = stod(args[argsIterator]);
+				send_text_protocol(numberProtocol, FIELD_NUMBER);
+				sequenceNumber--;
+				argsIterator++;
 			}
 		}
 
-		//Wys³anie numeru sekwencyjnego
-		send_sequence_number(sessionId, 1);
-
-		//Wys³anie argumentu
-		{
-			TextProtocol numberProtocol(GET_CURRENT_TIME(), sessionId, "ARGUMENT");
-			numberProtocol.number = double(stod(arg));
-			send_text_protocol(numberProtocol, SEND_NUMBER);
-		}
-
-		//Wys³anie numeru sekwencyjnego
-		send_sequence_number(sessionId, 0);
 
 		//Otrzymanie wiadomoœci zwrotnej
 		std::vector<TextProtocol>receivedParts = receive_parts();
 
 		//Parsowanie komunikatów
 		for (const TextProtocol& prot : receivedParts) {
-			if (prot.operation == "STATUS" && prot.status == STATUS_CALC_OUT_OF_RANGE) {
-				std::cout << "\nWynik poza zakresem.\n";
-				system("pause");
-				break;
+			if (prot.operation == OP_RESULT) {
+				if (operation == OP_FACT) { std::cout << "\nWynik operacji: " << args[0] << "! = "; }
+				else {
+					std::string calcSign;
+					if (operation == OP_ADD) { calcSign = " + "; }
+					else if (operation == OP_SUBT) { calcSign = " - "; }
+					else if (operation == OP_MULTP) { calcSign = " * "; }
+					else if (operation == OP_DIV) { calcSign = " / "; }
+					std::cout << "\nWynik operacji: " << args[0] << calcSign << (stod(args[1]) >= 0.0 ? args[1] : "(" + args[1] + ')') << " = ";
+				}
+			} //Dla tego komunikatu nic nie robimy
+			else if (prot.status == STATUS_CALC_SUCCESS) {
+				continue;
 			}
-			else if (prot.operation == "STATUS" && prot.status == STATUS_CALC_SUCCESS) {
-				std::cout << "\nOperacja powiod³a siê.\n";
+			else if (prot.get_field() == FIELD_NUMBER) {
+				std::string numberStr = std::to_string(prot.number);
+				double_remove_end_zero(numberStr);
+				std::cout << (prot.number >= 0 ? numberStr : "(" + numberStr + ')');
 			}
-			else if (prot.operation == "WYNIK") {
-				std::cout << "\nWynik operacji: " << arg << "! = " << unsigned int(prot.number) << '\n';
-				system("pause");
+			else if (prot.status == STATUS_CALC_OUT_OF_RANGE) { std::cout << "wynik poza zakresem"; }
+			else if (prot.get_field() == FIELD_CALCULATION_ID) {
+				std::cout << " | Identyfikator obliczeñ: " << prot.calculationId << '\n';
 			}
 		}
+		system("pause");
 	}
 
 	//Ca³a historia
 	void whole_history() {
-		const TextProtocol histProtocol(GET_CURRENT_TIME(), sessionId, "HISTORIA_CALA");
-		send_text_protocol(histProtocol, SEND_NO_ADDITIONAL);
+		TextProtocol histProtocol(GET_CURRENT_TIME(), sessionId, 0);
+		histProtocol.operation = OP_HISTORY_WHOLE;
+		send_text_protocol(histProtocol, FIELD_OPERATION);
 
-		while (true) {
-			std::cout << '\n';
-			//Odbieranie numeru sekwencyjnego
-			std::string received;
-			receive_text_protocol(received);
-			TextProtocol sequenceProtocol(received);
+		std::vector<TextProtocol> history = receive_parts();
 
-			if (sequenceProtocol.operation == "NUMER_SEKWENCYJNY" && sequenceProtocol.sequenceNumber == 0) { break; }
-			else {
-				//Odbieranie komunikatu od operacji
-				receive_text_protocol(received);
-				TextProtocol operationProtocol(received);
+		std::string calcSign;
+		unsigned int argNum = 1;
+		bool isFactorial = false;
+		std::cout << '\n';
+		for (const TextProtocol& prot : history) {
+			if (prot.operation == OP_FACT && !prot.operation.empty()) { calcSign = "!"; isFactorial = true; }
+			else if (prot.operation == OP_ADD && !prot.operation.empty()) { calcSign = " + "; }
+			else if (prot.operation == OP_SUBT && !prot.operation.empty()) { calcSign = " - "; }
+			else if (prot.operation == OP_MULTP && !prot.operation.empty()) { calcSign = " * "; }
+			else if (prot.operation == OP_DIV && !prot.operation.empty()) { calcSign = " / "; }
 
+			else if (prot.operation == OP_RESULT) { std::cout << " = "; }
+			else if (prot.status == STATUS_CALC_OUT_OF_RANGE) { std::cout << prot.status; }
+			else if (prot.status == STATUS_CALC_SUCCESS) { continue; }
+			else if (prot.get_field() == FIELD_CALCULATION_ID) {
+				std::cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
+			}
 
-				//Odbieranie numeru sekwencyjnego
-				receive_text_protocol(received);
-				sequenceProtocol = TextProtocol(received);
-				if (sequenceProtocol.operation == "NUMER_SEKWENCYJNY" && sequenceProtocol.sequenceNumber == 0) { break; }
-
-				//Odbieranie pierwszego argumentu
-				receive_text_protocol(received);
-				TextProtocol argumentProtocol(received);
-				std::cout << argumentProtocol.number;
-
-
-				if (operationProtocol.operation == "SILNIA") {
-					std::cout << "!";
-				}
-				else if (operationProtocol.operation == "DODAWANIE") {
-					std::cout << " + ";
-				}
-				else if (operationProtocol.operation == "ODEJMOWANIE") {
-					std::cout << " - ";
-				}
-				else if (operationProtocol.operation == "MNOZENIE") {
-					std::cout << " * ";
-				}
-				else if (operationProtocol.operation == "DZIELENIE") {
-					std::cout << " / ";
-				}
-
-				//Odbieranie numeru sekwencyjnego
-				receive_text_protocol(received);
-				sequenceProtocol = TextProtocol(received);
-				if (sequenceProtocol.operation == "NUMER_SEKWENCYJNY" && sequenceProtocol.sequenceNumber == 0) { break; }
-
-				//Odbieranie drugiego argumentu lub wyniku (silnia)
-				receive_text_protocol(received);
-				argumentProtocol = TextProtocol(received);
-
-				if (operationProtocol.operation == "SILNIA") {
-					std::cout << " = ";
-					if (argumentProtocol.status == STATUS_CALC_OUT_OF_RANGE) {
-						std::cout << argumentProtocol.status << '\n';
-						continue;
-					}
-					else if (argumentProtocol.status == STATUS_CALC_SUCCESS) {
-						//Odbieranie numeru sekwencyjnego
-						receive_text_protocol(received);
-						sequenceProtocol = TextProtocol(received);
-						if (sequenceProtocol.operation == "NUMER_SEKWENCYJNY" && sequenceProtocol.sequenceNumber == 0) { break; }
-
-						//Odbieranie wyniku
-						receive_text_protocol(received);
-						argumentProtocol = TextProtocol(received);
-						std::cout << unsigned int(argumentProtocol.number);
-						continue;
-					}
-				}
-				else {
-					std::cout << (long long int(argumentProtocol.number) < 0 ? "(" + std::to_string(long long int(argumentProtocol.number)) + ")" : std::to_string(-int(argumentProtocol.number)));
-				}
-
-				std::cout << " = ";
-				//Odbieranie numeru sekwencyjnego
-				receive_text_protocol(received);
-				sequenceProtocol = TextProtocol(received);
-				if (sequenceProtocol.operation == "NUMER_SEKWENCYJNY" && sequenceProtocol.sequenceNumber == 0) { break; }
-
-				//Odbieranie wyniku
-				receive_text_protocol(received);
-				argumentProtocol = TextProtocol(received);
-
-				if (argumentProtocol.status == STATUS_CALC_OUT_OF_RANGE) {
-					std::cout << argumentProtocol.status << '\n';
-					continue;
-				}
-				else if (argumentProtocol.status == STATUS_CALC_SUCCESS) {
-					//Odbieranie numeru sekwencyjnego
-					receive_text_protocol(received);
-					sequenceProtocol = TextProtocol(received);
-					if (sequenceProtocol.operation == "NUMER_SEKWENCYJNY" && sequenceProtocol.sequenceNumber == 0) { break; }
-
-					//Odbieranie wyniku
-					receive_text_protocol(received);
-					argumentProtocol = TextProtocol(received);
-					std::cout << argumentProtocol.number;
-					continue;
-				}
+			else if (!isnan(prot.number) && argNum == 1) {
+				std::string numberStr = std::to_string(prot.number);
+				double_remove_end_zero(numberStr);
+				std::cout << numberStr << calcSign;
+				argNum++;
+				if (isFactorial) { argNum++; isFactorial = false; }
+			}
+			else if (!isnan(prot.number) && argNum == 2) {
+				std::string numberStr = std::to_string(prot.number);
+				double_remove_end_zero(numberStr);
+				const double numberDouble = stod(numberStr);
+				std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
+				argNum++;
+			}
+			else if (!isnan(prot.number) && argNum == 3) {
+				std::string numberStr = std::to_string(prot.number);
+				double_remove_end_zero(numberStr);
+				const double numberDouble = stod(numberStr);
+				std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
+				argNum = 1;
 			}
 		}
 		std::cout << '\n';
@@ -577,8 +278,9 @@ public:
 
 			//Zakoñczenie sesji
 			if (choice == 1) {
-				const TextProtocol protocol(GET_CURRENT_TIME(), sessionId, "ZAKONCZENIE");
-				if (!send_text_protocol(protocol, SEND_NO_ADDITIONAL)) {
+				TextProtocol protocol(GET_CURRENT_TIME(), sessionId, 0);
+				protocol.operation = OP_END;
+				if (!send_text_protocol(protocol, FIELD_OPERATION)) {
 					std::cout << "B³¹d wysy³ania.\n";
 				}
 				return;
@@ -600,72 +302,73 @@ public:
 		int choiceCalc = 1;
 		std::string goBackText = " Powrót.";
 		std::string additionText = " Dodanie dwóch liczb.";
-		std::string substractionText = " Odjêcie dwóch liczb.";
+		std::string subtractionText = " Odjêcie dwóch liczb.";
 		std::string multiplicationText = " Mno¿enie dwóch liczb.";
 		std::string divisionText = " Dzielenie dwóch liczb.";
 		std::string factorialText = " Silnia z liczby.";
 
-		//Wyœwietlanie obramowania, id sesji i tekstu odnoœnie wyboru
-		CONSOLE_MANIP::clear_console();
-		CONSOLE_MANIP::show_console_cursor(false);
-		CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
-		CONSOLE_MANIP::print_text(80 - sessionIdInfo.length() - 2, 1, sessionIdInfo);
-		CONSOLE_MANIP::print_text(2, 2, actionChoice);
-
 		while (true) {
-			//DODAWANIE wskaŸnika wybranej opcji
-			goBackText[0] = ' ';
-			additionText[0] = ' ';
-			substractionText[0] = ' ';
-			multiplicationText[0] = ' ';
-			divisionText[0] = ' ';
-			factorialText[0] = ' ';
-			if (choiceCalc == 1) { goBackText[0] = '>'; }
-			else if (choiceCalc == 2) { additionText[0] = '>'; }
-			else if (choiceCalc == 3) { substractionText[0] = '>'; }
-			else if (choiceCalc == 4) { multiplicationText[0] = '>'; }
-			else if (choiceCalc == 5) { divisionText[0] = '>'; }
-			else if (choiceCalc == 6) { factorialText[0] = '>'; }
+			//Wyœwietlanie obramowania, id sesji i tekstu odnoœnie wyboru
+			CONSOLE_MANIP::clear_console();
+			CONSOLE_MANIP::show_console_cursor(false);
+			CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
+			CONSOLE_MANIP::print_text(80 - sessionIdInfo.length() - 2, 1, sessionIdInfo);
+			CONSOLE_MANIP::print_text(2, 2, actionChoice);
+			while (true) {
+				//DODAWANIE wskaŸnika wybranej opcji
+				goBackText[0] = ' ';
+				additionText[0] = ' ';
+				subtractionText[0] = ' ';
+				multiplicationText[0] = ' ';
+				divisionText[0] = ' ';
+				factorialText[0] = ' ';
+				if (choiceCalc == 1) { goBackText[0] = '>'; }
+				else if (choiceCalc == 2) { additionText[0] = '>'; }
+				else if (choiceCalc == 3) { subtractionText[0] = '>'; }
+				else if (choiceCalc == 4) { multiplicationText[0] = '>'; }
+				else if (choiceCalc == 5) { divisionText[0] = '>'; }
+				else if (choiceCalc == 6) { factorialText[0] = '>'; }
 
-			//Wyœwietlanie opcji
-			CONSOLE_MANIP::print_text(2, 4, goBackText);
-			CONSOLE_MANIP::print_text(2, 5, additionText);
-			CONSOLE_MANIP::print_text(2, 6, substractionText);
-			CONSOLE_MANIP::print_text(2, 7, multiplicationText);
-			CONSOLE_MANIP::print_text(2, 8, divisionText);
-			CONSOLE_MANIP::print_text(2, 9, factorialText);
+				//Wyœwietlanie opcji
+				CONSOLE_MANIP::print_text(2, 4, goBackText);
+				CONSOLE_MANIP::print_text(2, 5, additionText);
+				CONSOLE_MANIP::print_text(2, 6, subtractionText);
+				CONSOLE_MANIP::print_text(2, 7, multiplicationText);
+				CONSOLE_MANIP::print_text(2, 8, divisionText);
+				CONSOLE_MANIP::print_text(2, 9, factorialText);
 
-			//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
-			// jego akcja nie zosta³a wielokrotnie wykonana
-			CONSOLE_MANIP::clear_console_input_buffer();
+				//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
+				// jego akcja nie zosta³a wielokrotnie wykonana
+				CONSOLE_MANIP::clear_console_input_buffer();
 
-			//Sprawdzanie naciœniêtych klawiszy
-			if (CONSOLE_MANIP::check_arrow("UP") && choiceCalc > 1) { choiceCalc--; }
-			else if (CONSOLE_MANIP::check_arrow("DOWN") && choiceCalc < 6) { choiceCalc++; }
-			else if (CONSOLE_MANIP::check_enter()) { break; }
-		}
-		//Przejœcie do wykonywania wybranego dzia³ania
-		//Powrót
-		if (choiceCalc == 1) { return; }
-		//Dodawanie
-		else if (choiceCalc == 2) {
-			add();
-		}
-		//Odejmowanie
-		else if (choiceCalc == 3) {
-			substract();
-		}
-		//Mno¿enie
-		else if (choiceCalc == 4) {
-			multiply();
-		}
-		//Dzielenie
-		else if (choiceCalc == 5) {
-			divide();
-		}
-		//Silnia
-		else if (choiceCalc == 6) {
-			factorial();
+				//Sprawdzanie naciœniêtych klawiszy
+				if (CONSOLE_MANIP::check_arrow("UP") && choiceCalc > 1) { choiceCalc--; }
+				else if (CONSOLE_MANIP::check_arrow("DOWN") && choiceCalc < 6) { choiceCalc++; }
+				else if (CONSOLE_MANIP::check_enter()) { break; }
+			}
+			//Przejœcie do wykonywania wybranego dzia³ania
+			//Powrót
+			if (choiceCalc == 1) { break;; }
+			//Dodawanie
+			else if (choiceCalc == 2) {
+				calculation(&arg_input_two, OP_ADD);
+			}
+			//Odejmowanie
+			else if (choiceCalc == 3) {
+				calculation(&arg_input_two, OP_SUBT);
+			}
+			//Mno¿enie
+			else if (choiceCalc == 4) {
+				calculation(&arg_input_two, OP_MULTP);
+			}
+			//Dzielenie
+			else if (choiceCalc == 5) {
+				calculation(&arg_input_two_div, OP_DIV);
+			}
+			//Silnia
+			else if (choiceCalc == 6) {
+				calculation(&arg_input_one_uint, OP_FACT);
+			}
 		}
 	}
 

@@ -35,5 +35,8 @@
     <ClInclude Include="..\TS_PROJECT_L8_7\Include\ThreadSafe.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\TS_PROJECT_L8_7\Include\Defines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

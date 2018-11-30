@@ -1,9 +1,7 @@
 #pragma once
-#include <string>
+#include "Defines.h"
 #include <sstream>
 #include <iomanip>
-#include <iostream>
-
 
 inline std::ostream& operator << (std::ostream& os, const tm& time) {
 	os << std::setfill('0') << std::setw(2) << time.tm_hour << ':' << std::setfill('0') << std::setw(2) << time.tm_min << ':' << std::setfill('0') << std::setw(2) << time.tm_sec;
@@ -20,45 +18,53 @@ inline const tm GET_CURRENT_TIME() {
 	return time;
 }
 
-
 //HEAD od header (nag³ówek)
 //Makra do dodawania w funkcji to_string()
-#define HEAD_OPERATION		std::string("OPERACJA: ")//10
-#define HEAD_STATUS		std::string("Status: ") //8
-#define HEAD_NUMBER    std::string("Liczba: ")//12
-#define HEAD_SEQNUM     std::string("Numer Sekwencyjny: ")
-#define HEAD_ID     std::string("Identyfikator: ")
-#define HEAD_CALC_ID  std::string("Identyfikator operacji: ")
-#define HEAD_TIME   std::string("Czas: ")
 
-#define STATUS_CALC_SUCCESS std::string("OPERACJA_UDANA")
-#define STATUS_CALC_OUT_OF_RANGE std::string("WYNIK_POZA_ZAKRESEM")
+
+inline void double_remove_end_zero(std::string& numberStr) {
+	if (numberStr.find('.') != std::string::npos) {
+		for (unsigned int i = numberStr.size() - 1; i > 0; i--) {
+			if (numberStr[i] == '0') {
+				numberStr.pop_back();
+			}
+			else if (numberStr[i] == '.') {
+				numberStr.pop_back();
+				break;
+			}
+			else { break; }
+		}
+	}
+}
 
 class TextProtocol {
 public:
+	tm  time;   //znacznik czasowy
+	unsigned int id;             //Identyfikator sesji
+	unsigned int sequenceNumber; //Numer sekwencyjny (pole obowi¹zkowe)
+
 	/**
 	* Znaczenia operation: \n
-	* "Rozpoczecie" - rozpoczêcie sesji, \n
+	* OP_BEGIN - rozpoczêcie sesji, \n
 	*
-	* "DODAWANIE" - informacja o obliczeniach, \n
-	* "ODEJMOWANIE" - informacja o obliczeniach, \n
-	* "DZIELENIE" - informacja o obliczeniach, \n
-	* "MNOZENIE" - informacja o obliczeniach, \n
-	* "SILNIA" - informacja o obliczeniach, \n
+	* OP_ADD - informacja o obliczeniach, \n
+	* OP_SUBT - informacja o obliczeniach, \n
+	* OP_DIV - informacja o obliczeniach, \n
+	* OP_MULTP - informacja o obliczeniach, \n
+	* OP_FACT - informacja o obliczeniach, \n
 	* \n
-	* "ARGUMENT" - wys³anie argumentu,\n
-	* "WYNIK" - wys³anie wyniku, \n
+	* OP_ARGUMENT - wys³anie argumentu,\n
+	* OP_RESULT - wys³anie wyniku, \n
 	* \n
-	* "HISTORIA_CALA" \n
+	* OP_HISTORY_WHOLE \n
 	* "HISTORIA_ID" \n
 	* \n
-	* "STATUS" - wys³anie statusu operacji \n
+	* OP_STATUS - wys³anie statusu operacji \n
 	* \n
-	* "IDENTYFIKATOR_SESJI" - nadawanie identyfikatora sesji \n
-	* "IDENTYFIKATOR_OBLICZEN" - przesy³anie identyfikatora obliczeñ \n
-	* "NUMER_SEKWENCYJNY" - przes³anie numeru sekwencyjnego \n
+	* OP_ID_SESSION - nadawanie identyfikatora sesji \n
+	* OP_ID_CALCULATION - przesy³anie identyfikatora obliczeñ \n
 	* \n
-	* "ZAKONCZENIE" - roz³¹czenie, \n
+	* OP_END - roz³¹czenie, \n
 	*/
 	std::string operation;    //Pole operacji
 
@@ -67,27 +73,17 @@ public:
 	* "WYNIK_POZA_ZAKRESEM" \n
 	* "OPERACJA_UDANA" \n
 	*/
-	std::string status;
-	double number; //Pole liczby
-	unsigned int sequenceNumber;     //Numer sekwencyjny
-	int id;     //Identyfikator sesji
+	std::string status;          //Pole statusu
+	double number;               //Pole liczby
 	unsigned int calculationId;  //Identyfikator obliczeñ
-	tm  time;   //znacznik czasowy
 
 	//Konstruktor domyœlny
-	TextProtocol() : operation(""), status(""), number(0), sequenceNumber(0), id(0), calculationId(0), time() {};
+	TextProtocol() : time(), id(NULL), sequenceNumber(NULL), operation(""),status(""),number(NAN),calculationId(NULL) {};
 
-	//Konstruktor przyjmuj¹cy wszystkie pola
-	TextProtocol(const std::string& OP_, const std::string& ST_, const int& number1_,
-		const int& NS_, const int& ID_, const int& OP_ID_, const tm& time_)
-		: operation(OP_), status(ST_), number(number1_), sequenceNumber(NS_), id(ID_),
-		calculationId(OP_ID_), time(time_) {}
-
-	TextProtocol(const tm& time_, const unsigned int& id_, const std::string& operation_) {
-		number = 0;
+	TextProtocol(const tm& time_, const unsigned int& id_, const unsigned int& sequenceNumber_) : TextProtocol() {
 		time = time_;
 		id = id_;
-		operation = operation_;
+		sequenceNumber = sequenceNumber_;
 	}
 
 	explicit TextProtocol(const std::string& data) { from_string(data); }
@@ -115,43 +111,39 @@ public:
 		result += temp + ' ';
 
 		//Dodanie identyfikatora sesji (pole obowi¹zkowe)
-		result += HEAD_ID + std::to_string(id) + ' ';
+		result += HEAD_SESSION_ID + std::to_string(id) + ' ';
 
-		//Dodanie operacji (pole obowi¹zkowe)
-		result += HEAD_OPERATION + operation + ' ';
+		//Pole numer sekwencyjny (pole obowi¹zkowe)
+		result += HEAD_SEQNUM; result += std::to_string(sequenceNumber) + ' ';
 
-		//Pola nieobowi¹zkowe
-		if (field == 0) { result += HEAD_SEQNUM; result += std::to_string(sequenceNumber); }
-		else if (field == 1) {
+		//Pole numer operacja
+		if (field == FIELD_OPERATION) { result += HEAD_OPERATION + operation; }
+		//Pole liczba
+		else if (field == FIELD_NUMBER) {
 			std::string numberStr = std::to_string(number);
-			if (numberStr.find('.') != std::string::npos) {
-				for (unsigned int i = numberStr.size() - 1; i > 0; i--) {
-					if (numberStr[i] == '0') {
-						numberStr.pop_back();
-					}
-					else if (numberStr[i] == '.') {
-						numberStr.pop_back();
-						break;
-					}
-					else { break; }
-				}
-			}
+			double_remove_end_zero(numberStr);
 			result += HEAD_NUMBER + numberStr;
 		}
-		else if (field == 2) { result += HEAD_CALC_ID + std::to_string(calculationId); }
-		else if (field == 3) { result += HEAD_STATUS + status; }
+		//Pole id obliczeñ
+		else if (field == FIELD_CALCULATION_ID) { result += HEAD_CALC_ID + std::to_string(calculationId); }
+		//Pole status
+		else if (field == FIELD_STATUS) { result += HEAD_STATUS + status; }
 
 		result += ' ';
 
-		//std::cout << "Result length: " << result.length() << '\n';
-		//std::cout << "Result: " << result << '\n';
 		return result;
+	}
+	unsigned int get_field() const {
+		if (!operation.empty())  { return FIELD_OPERATION; }
+		if (calculationId != 0) { return FIELD_CALCULATION_ID; }
+		if (!status.empty()) { return FIELD_STATUS; }
+		if (!isnan(number)) { return FIELD_NUMBER; }
+		return FIELD_NO_ADDITIONAL;
 	}
 
 	//Deserializacja
 	void from_string(const std::string& data) {
 		this->clear();
-		//std::cout << "\nfrom_string\n" << "Dane: " << data << '\n';
 		auto iterator = data.find(HEAD_TIME);
 		std::string temp;
 
@@ -184,8 +176,8 @@ public:
 		//Numer Identyfikacyjny (pole obowi¹zkowe)
 		{
 			temp.clear();
-			iterator = data.find(HEAD_ID);
-			for (auto i = iterator + HEAD_ID.length(); i < data.size(); i++) {
+			iterator = data.find(HEAD_SESSION_ID);
+			for (auto i = iterator + HEAD_SESSION_ID.length(); i < data.size(); i++) {
 				if (data[i] == '\0' || data[i] == ' ') { break; }
 				temp += data[i];
 			}
@@ -203,7 +195,6 @@ public:
 					temp += data[i];
 				}
 				operation = temp;
-				//std::cout << "Typ operacji: " << operation << '\n';
 			}
 		}
 
@@ -217,7 +208,6 @@ public:
 					temp += data[i];
 				}
 				status = temp;
-				//std::cout << "Status: " << status << '\n';
 			}
 		}
 
@@ -244,7 +234,6 @@ public:
 					temp += data[i];
 				}
 				calculationId = stoi(temp);
-				//std::cout << "wynik operacji: " << calculationId << '\n';
 			}
 		}
 
