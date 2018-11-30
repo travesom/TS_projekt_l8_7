@@ -11,10 +11,7 @@ class ClientUDP : public NodeUDP {
 public:
 	unsigned int sessionId = 0;
 
-	ClientUDP(const u_long& IP, const unsigned short& Port1) :NodeUDP(IP, Port1) {
-		otherAddr.sin_addr.S_un.S_addr = IP;
-	}
-	virtual ~ClientUDP() { WSACleanup(); }
+	ClientUDP(const u_long& IP, const unsigned short& Port1) :NodeUDP(IP, Port1) {}
 
 	bool start_session() {
 		TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, 0);
@@ -110,9 +107,7 @@ public:
 		argInputFunc(args);
 
 		unsigned int argNum = 0;
-		for (const std::string& arg : args) {
-			if (!args[argNum].empty()) { argNum++; }
-		}
+		for (const std::string& arg : args) { if (!arg.empty()) { argNum++; } }
 
 		unsigned int sequenceNumber = argNum;
 

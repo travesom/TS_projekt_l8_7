@@ -15,67 +15,72 @@ protected:
 	SOCKET nodeSocket;
 	sockaddr_in nodeAddr{};
 	sockaddr_in otherAddr{};
-	char buffer[1024];
-
 
 	//Konstruktor
 	NodeUDP(const u_long& IP, const unsigned short& Port1) {
-		// Initialize Winsock
+		//Inicjalizacja WinSock
 		const int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 		if (iResult != NO_ERROR) {
 			std::cout << "WSAStartup failed with error " << iResult << "\n";
 			return;
 		}
 
-		//---------------------------------------------
-		// Create a socket for sending data
+		//Tworzenie gniazdka do wysy³ania
 		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (nodeSocket == INVALID_SOCKET) {
 			std::cout << "socket niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			WSACleanup();
 			return;
 		}
-		//---------------------------------------------
-		// Set up the nodeAddr structure with the IP address
-		// and the specified port number.
-		otherAddr.sin_family = AF_INET;
-		otherAddr.sin_port = htons(Port1);
-		otherAddr.sin_addr.s_addr = IP;
 
+		//Adres wêz³a
 		nodeAddr.sin_family = AF_INET;
 		nodeAddr.sin_port = htons(Port1);
 		nodeAddr.sin_addr.s_addr = INADDR_ANY;
+
+		//Adres nadawcy/odbiorcy
+		otherAddr.sin_family = AF_INET;
+		otherAddr.sin_port = htons(Port1);
+		otherAddr.sin_addr.s_addr = IP;
 	}
+	~NodeUDP(){ WSACleanup(); }
 
 public:
 	bool receive_text_protocol(std::string& received) {
-		for (unsigned int i = 0; i < 1024; i++) {
-			buffer[i] = NULL;
-		}
-
+		char recvBuffer[1024];
 		int sendAddrLength = sizeof(otherAddr);
-		const int iResult = recvfrom(nodeSocket, buffer, sizeof(buffer), 0, reinterpret_cast<SOCKADDR *>(&otherAddr), &sendAddrLength);
+
+		//Wpisywanie dla pewnoœci NULL do tablicy znaków
+		std::fill(std::begin(recvBuffer), std::end(recvBuffer), NULL);
+
+		const int iResult = recvfrom(nodeSocket, recvBuffer, sizeof(recvBuffer), 0, reinterpret_cast<SOCKADDR *>(&otherAddr), &sendAddrLength);
 		if (iResult == SOCKET_ERROR) {
 			std::cout << "Odbieranie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return false;
 		}
+
+		//Przepisywanie zawartoœci bufora do string'a
 		std::string result;
 		for (unsigned int i = 0; i < 1024; i++) {
-			if (buffer[i] != NULL) {
-				result.push_back(buffer[i]);
+			//NULL oznacza koniec stringa
+			if (recvBuffer[i] != NULL) {
+				result.push_back(recvBuffer[i]);
 			}
-			else { break; }
+			else { 
+				//NULL termination
+				result.push_back(recvBuffer[i]);
+				break;
+			}
 		}
-
-		//NULL termination
-		result.push_back(NULL);
 
 		received = result;
 		return true;
 	}
 
 	bool send_text_protocol(const TextProtocol& protocol, const int& field) {
-		std::string sendStr = protocol.to_string(field);
+		//Dane do wys³ania
+		const std::string sendStr = protocol.to_string(field);
+
 		const int iResult = sendto(nodeSocket, sendStr.c_str(), sendStr.length(), 0, reinterpret_cast<SOCKADDR *>(&otherAddr), sizeof(otherAddr));
 		if (iResult == SOCKET_ERROR) {
 			std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
@@ -88,14 +93,17 @@ public:
 
 	//Zwraca wektor z wszystkimi komunikatami od operacji
 	std::vector<TextProtocol> receive_parts() {
+		//Kontener na otrzymanie komunikaty
 		std::vector<TextProtocol> receivedMessages;
-		std::string received;
 
-		//Pêtla pozyskiwania danych
+		//Pêtla odbierania danych
 		while (true) {
+			std::string received;
 			receive_text_protocol(received);
 			const TextProtocol receivedProtocol(received);
 			receivedMessages.push_back(receivedProtocol);
+
+			//Odbieranie koñczy siê przy natrafieniu na numer sekwencyjny 0
 			if (receivedProtocol.sequenceNumber == 0) { break; }
 		}
 		return receivedMessages;

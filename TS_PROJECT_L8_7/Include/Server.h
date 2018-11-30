@@ -17,7 +17,7 @@ inline int randInt(const int &min, const int &max) {
 
 class ServerUDP : public NodeUDP {
 public:
-	unsigned int currentSessionId;
+	unsigned int currentSessionId = 0;
 	unsigned int calculationId = 1;
 
 	/**
@@ -29,13 +29,13 @@ public:
 
 	//Konstruktor i destruktor
 	ServerUDP(const u_long& IP, const unsigned short& Port1) : NodeUDP(IP, Port1) {
+		//Bindowanie gniazdka dla adresu odbierania
 		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&nodeAddr), sizeof(nodeAddr));
 		if (iResult != 0) {
 			std::cout << "Bindowanie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return;
 		}
 	};
-	virtual ~ServerUDP() { WSACleanup(); };
 
 	//Rozpoczêcie sesji
 	bool start_session() {
@@ -60,18 +60,19 @@ public:
 			sessionIds.push_back(sessionId);
 		}
 
+		//Spisanie id obecnej sesji
 		currentSessionId = sessionId;
 
+		//Wys³anie id
 		TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		startProtocol.operation = OP_ID_SESSION;
-
-		//Wys³anie id
 		if (!send_text_protocol(startProtocol, FIELD_OPERATION)) {
 			std::cout << "B³¹d wysy³ania.\n";
 			return false;
 		}
 		else { session(); }
 
+		//Po skoñczonej sesji id 0 oznacza, ¿e obecnie ¿adna sesja nie ma miejsca
 		currentSessionId = 0;
 		return true;
 	}
@@ -134,8 +135,6 @@ public:
 
 	//Obliczenia (typ obliczeñ okreœlany poprzez wskaŸnik funkcji)
 	void calculation(bool(*calc_function)(const double&, const double&, double&)) {
-		std::string received;
-
 		//Kontener na komunikaty potrzebne do obliczeñ
 		const std::vector<TextProtocol> receivedMessages = receive_parts();
 
@@ -154,44 +153,47 @@ public:
 
 		//Kontener na komunikaty dotycz¹ce wyniku obliczeñ
 		std::vector<TextProtocol> resultMessages;
+
+		//Dodanie operacji WYNIK do historii i do komunikatów do odes³ania
 		TextProtocol resultMessage(GET_CURRENT_TIME(), currentSessionId, 0);
 		resultMessage.operation = OP_RESULT;
 		history[calculationId].second.push_back(resultMessage);
 		resultMessages.push_back(resultMessage);
 
-		//Jeœli silnia siê nie powiedzie
+		//Jeœli obliczenie siê nie powiedzie
 		if (!calc_function(args[0], args[1], result)) {
-			//Dodanie statusu
+			//Dodanie statusu do historii i do komunikatów do odes³ania
 			TextProtocol statusProtocol(GET_CURRENT_TIME(), currentSessionId, 0);
 			statusProtocol.status = STATUS_OUT_OF_RANGE;
 			history[calculationId].second.push_back(statusProtocol);
 			resultMessages.push_back(statusProtocol);
 		}
-		//Jeœli silnia siê powiedzie
+		//Jeœli obliczenie siê powiedzie
 		else {
-			//Dodanie statusu
+			//Dodanie statusu do historii i do komunikatów do odes³ania
 			TextProtocol statusProtocol(GET_CURRENT_TIME(), currentSessionId, 0);
 			statusProtocol.status = STATUS_SUCCESS;
 			history[calculationId].second.push_back(statusProtocol);
 			resultMessages.push_back(statusProtocol);
 
-			//Dodanie wyniku
+			//Dodanie wyniku do historii i do komunikatów do odes³ania
 			TextProtocol resultProtocol(GET_CURRENT_TIME(), currentSessionId, 0);
 			resultProtocol.number = result;
 			history[calculationId].second.push_back(resultProtocol);
 			resultMessages.push_back(resultProtocol);
 		}
 
-		//Dodanie identyfikatora obliczeñ
+		//Dodanie identyfikatora obliczeñ do historii i do komunikatów do odes³ania
 		TextProtocol calcIdProtocol(GET_CURRENT_TIME(), currentSessionId, 0);
 		calcIdProtocol.calculationId = calculationId;
+		//Dodanie do historii u³atwia póŸniej wysy³anie historii
 		history[calculationId].second.push_back(calcIdProtocol);
 		resultMessages.push_back(calcIdProtocol);
 
-		unsigned int sequenceNumber = resultMessages.size() - 1;
+		//Wysy³anie wyniku
 		std::cout << "\nWysy³anie wyniku...\n";
+		unsigned int sequenceNumber = resultMessages.size() - 1;
 		for (TextProtocol prot : resultMessages) {
-			unsigned int sendField = -1;
 			prot.sequenceNumber = sequenceNumber;
 			std::cout << "Sent: " << prot.to_string(prot.get_field()) << '\n';
 			send_text_protocol(prot, prot.get_field());
@@ -201,8 +203,10 @@ public:
 
 	//Historia (dla id sesji)
 	std::vector<TextProtocol> get_history_by_session_id(const unsigned int& sessionId) {
+		//Kontener do przechowywania komunikatów dla danego id sesji
 		std::vector<TextProtocol> result;
 
+		//Przegl¹danie historii
 		for (const auto& elem : history) {
 			if (elem.second.first == sessionId) {
 				for (const auto& prot : elem.second.second) {
@@ -213,14 +217,20 @@ public:
 		return result;
 	}
 	void whole_history() {
+		//Kontener z histori¹ dla danego id sesji
 		std::vector<TextProtocol> sessionHistory = get_history_by_session_id(currentSessionId);
+
+		//Numer sekwencyjny dla wysy³anych komunikatów
 		unsigned int sequenceNumber = sessionHistory.size() - 1;
+		//Zmienna u¿yta do iterowania po historii (zmniejsza szerokoœæ kodu)
 		unsigned int historyIterator = 0;
 		while (true) {
+			//Wys³anie komunikatu
 			std::cout << sessionHistory[historyIterator].to_string(sessionHistory[historyIterator].get_field()) << '\n';
 			sessionHistory[historyIterator].sequenceNumber = sequenceNumber;
 			send_text_protocol(sessionHistory[historyIterator], sessionHistory[historyIterator].get_field());
 
+			//Zmniejszenie numeru sekwencyjnego i zwiêkszenie iteratora po historii
 			sequenceNumber--;
 			historyIterator++;
 			if (sequenceNumber == -1) { break; }
@@ -228,45 +238,41 @@ public:
 	}
 
 	bool session() {
+		//Pêtla g³ówna sesji
 		while (true) {
-			TextProtocol operationProtocol;
 			std::string received;
-
 			receive_text_protocol(received);
-			operationProtocol.from_string(received);
+			TextProtocol operationProtocol(received);
 
+			//Operacje nie do obliczeñ -------------------------------------------------------------
+
+			//Zakoñczenie
 			if (operationProtocol.operation == OP_END) {//sprawdza czy klient chce sie rozl¹czyæ
 				return true;
 			}
+			//Wyœwietlenie ca³ej historii
+			else if (operationProtocol.operation == OP_HISTORY_WHOLE) { whole_history(); continue; }
 
-			if (operationProtocol.operation != OP_HISTORY_WHOLE) {
-				std::cout << "Received (session): " << received << '\n';
-				history[calculationId].first = currentSessionId;
-				history[calculationId].second.push_back(operationProtocol);
-			}
-			if (operationProtocol.operation == OP_ADD) {
-				calculation(&add);
-				calculationId++;
-			}
-			else if (operationProtocol.operation == OP_SUBT) {
-				calculation(&subtract);
-				calculationId++;
-			}
-			else if (operationProtocol.operation == OP_MULTP) {
-				calculation(&multiply);
-				calculationId++;
-			}
-			else if (operationProtocol.operation == OP_DIV) {
-				calculation(&divide);
-				calculationId++;
-			}
-			else if (operationProtocol.operation == OP_FACT) {
-				calculation(&factorial);
-				calculationId++;
-			}
-			else if (operationProtocol.operation == OP_HISTORY_WHOLE) {
-				whole_history();
-			}
+			//Operacje do obliczeñ -----------------------------------------------------------------
+
+			//Wpisanie operacji do historii
+			std::cout << "Received (session): " << received << '\n';
+			history[calculationId].first = currentSessionId;
+			history[calculationId].second.push_back(operationProtocol);
+
+			//Dodawanie
+			if (operationProtocol.operation == OP_ADD) { calculation(&add); }
+			//Odejmowanie
+			else if (operationProtocol.operation == OP_SUBT) { calculation(&subtract); }
+			//Mno¿enie
+			else if (operationProtocol.operation == OP_MULTP) { calculation(&multiply); }
+			//Dzielenie
+			else if (operationProtocol.operation == OP_DIV) { calculation(&divide); }
+			//Silnia
+			else if (operationProtocol.operation == OP_FACT) { calculation(&factorial); }
+
+			//Zwiêkszenie id obliczeñ
+			calculationId++;
 		}
 	}
 };
