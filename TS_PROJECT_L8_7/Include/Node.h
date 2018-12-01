@@ -113,7 +113,7 @@ public:
 		//Wpisywanie dla pewnoœci NULL do tablicy znaków
 		std::fill(std::begin(recvBuffer), std::end(recvBuffer), NULL);
 
-		int iResult;
+		int iResult = SOCKET_ERROR;
 		for (int i = 10; i > 0; i--) {
 			iResult = recvfrom(nodeSocket, recvBuffer, sizeof(recvBuffer), 0, reinterpret_cast<SOCKADDR *>(&otherAddr), &sendAddrLength);
 			if (iResult != SOCKET_ERROR) { break; }

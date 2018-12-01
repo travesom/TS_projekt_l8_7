@@ -37,8 +37,6 @@
 #define OP_HISTORY_WHOLE std::string("HISTORA_CALA")
 #define OP_HISTORY_ID    std::string("HISTORIA_ID")
 
-#define OP_SERVER_SEARCH std::string("SZUKANIE_SERWERA")
-
 //Pola protoko³u (serializacja)
 #define FIELD_NO_ADDITIONAL -1
 #define FIELD_OPERATION      0

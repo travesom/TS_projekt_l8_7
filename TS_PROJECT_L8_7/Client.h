@@ -3,33 +3,7 @@
 
 #include "Node.h"
 #include <array>
-
-
-//inline std::vector<std::string> GET_LOCAL_IP_ADDRESSES() {
-//	char ac[80];
-//	std::vector<std::string> result;
-//	if (gethostname(ac, sizeof(ac)) == SOCKET_ERROR) {
-//		std::cerr << "Error " << WSAGetLastError() <<
-//			" when getting local host name." << std::endl;
-//		return result;
-//	}
-//
-//	std::cout << "Host name is " << ac << "." << std::endl;
-//	struct hostent *phe = gethostbyname(ac);
-//	if (phe == 0) {
-//		std::cerr << "Yow! Bad host lookup." << std::endl;
-//		return result;
-//	}
-//
-//	for (int i = 0; phe->h_addr_list[i] != nullptr; ++i) {
-//		struct in_addr addr;
-//		memcpy(&addr, phe->h_addr_list[i], sizeof(struct in_addr));
-//		result.push_back(inet_ntoa(addr));
-//		std::cout << "Address " << i << ": " << result[i] << std::endl;
-//	}
-//	result.push_back("127.0.0.1");
-//	return result;
-//}
+#include <chrono>
 
 class ClientUDP : public NodeUDP {
 private:
@@ -37,6 +11,8 @@ private:
 	const unsigned int boxHeight = 15;
 	const std::string actionChoice = "Wybór akcji:";
 	std::string sessionIdInfo = "Identyfikator sesji: " + std::to_string(sessionId);
+
+
 
 	//Funkcje wprowadzania danych ----------------------------------------------------------
 
@@ -46,19 +22,19 @@ private:
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 		while (true) {
 			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			std::cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " + " + args[1] : "");
+			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " + " + args[1] : "");
 			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
 			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
 			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
 				if (argNum == 1) { break; }
 				argNum++;
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "                     ";
+				sync_cout << "                     ";
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "Liczba poza zakresem!";
+				sync_cout << "Liczba poza zakresem!";
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 		}
@@ -70,19 +46,19 @@ private:
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 		while (true) {
 			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			std::cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " - " + args[1] : "");
+			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " - " + args[1] : "");
 			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
 			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
 			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
 				if (argNum == 1) { break; }
 				argNum++;
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "                     ";
+				sync_cout << "                     ";
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "Liczba poza zakresem!";
+				sync_cout << "Liczba poza zakresem!";
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 		}
@@ -94,19 +70,19 @@ private:
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 		while (true) {
 			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			std::cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " * " + args[1] : "");
+			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " * " + args[1] : "");
 			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
 			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
 			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
 				if (argNum == 1) { break; }
 				argNum++;
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "                     ";
+				sync_cout << "                     ";
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "Liczba poza zakresem!";
+				sync_cout << "Liczba poza zakresem!";
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 		}
@@ -118,13 +94,13 @@ private:
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 		while (true) {
 			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			std::cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " / " + args[1] : "");
+			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " / " + args[1] : "");
 			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
 			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
 
 			if (argNum == 1 && stod(args[argNum]) == 0) {
 				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-				std::cout << "Dzielnik nie mo¿e byæ zerem!";
+				sync_cout << "Dzielnik nie mo¿e byæ zerem!";
 				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 2);
 				continue;
 			}
@@ -132,12 +108,12 @@ private:
 				if (argNum == 1) { break; }
 				argNum++;
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "                     ";
+				sync_cout << "                     ";
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "Liczba poza zakresem!";
+				sync_cout << "Liczba poza zakresem!";
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 		}
@@ -148,20 +124,20 @@ private:
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 		while (true) {
 			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			std::cout << "Podaj równanie: " << args[0];
+			sync_cout << "Podaj równanie: " << args[0];
 			CONSOLE_MANIP::input_string_digits(args[0], 10);
 
 			if (stod(args[0]) < 4294967295) {
 				const unsigned int currentXpos = CONSOLE_MANIP::cursor_get_pos().X;
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "                     ";
+				sync_cout << "                     ";
 				CONSOLE_MANIP::cursor_set_pos(currentXpos, CONSOLE_MANIP::cursor_get_pos().Y - 1);
-				std::cout << '!';
+				sync_cout << '!';
 				break;
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "Liczba poza zakresem!";
+				sync_cout << "Liczba poza zakresem!";
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 		}
@@ -172,25 +148,54 @@ private:
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 		while (true) {
 			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			std::cout << "Podaj identyfikator obliczenia: " << arg;
+			sync_cout << "Podaj identyfikator obliczenia: " << arg;
 			CONSOLE_MANIP::input_string_digits(arg, 10);
 
 			if (stod(arg) < 4294967295) {
 				const unsigned int currentXpos = CONSOLE_MANIP::cursor_get_pos().X;
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "                     ";
+				sync_cout << "                     ";
 				CONSOLE_MANIP::cursor_set_pos(currentXpos, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 				break;
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				std::cout << "Liczba poza zakresem!";
+				sync_cout << "Liczba poza zakresem!";
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 		}
 	}
 
 	//--------------------------------------------------------------------------------------
+
+
+
+	//Wyœwietlanie napisu "Poszukiwanie serwera
+	static void find_server_text(bool& stop) {
+		auto timeStart = std::chrono::system_clock::now();
+		const std::string searchingText = "Szukanie serwera ";
+		unsigned int dotNumber = 0;
+		std::string dotsText = "";
+
+		CONSOLE_MANIP::print_text(3, 3, searchingText + dotsText);
+		while (true) {
+			std::chrono::duration<double> time = std::chrono::system_clock::now() - timeStart;
+			if (time >= std::chrono::duration<double>(0.5)) {
+				dotNumber++;
+				if (dotNumber > 3) {
+					dotNumber = 0;
+					dotsText = "";
+				}
+				else { dotsText += ". "; }
+				CONSOLE_MANIP::print_text(3, 3, searchingText + "                  ");
+				CONSOLE_MANIP::print_text(3, 3, searchingText + dotsText);
+				timeStart = std::chrono::system_clock::now();
+			}
+			if (stop) {
+				return;
+			}
+		}
+	}
 
 	//Szukanie serwera i spisywanie odpoweidzi
 	bool find_server() {
@@ -208,12 +213,10 @@ private:
 		}
 
 		//Otrzymywanie odpowiedzi na ¿¹danie rozpoczêcia sesji
-		std::string clientAddress;
 		bool findSuccess = false;
 		while (true) {
 			std::string received;
 			receive_text_protocol(received);
-			std::cout << "Received: " << received << '\n';
 			const TextProtocol recvProtocol(received);
 
 			if (recvProtocol.get_field() == FIELD_OPERATION && recvProtocol.operation == OP_ID_SESSION) {
@@ -266,22 +269,22 @@ private:
 		for (const TextProtocol& prot : receivedParts) {
 			if (prot.sessionId == sessionId) {
 				if (prot.operation == OP_STATUS) {
-					std::cout << " = ";
+					sync_cout << " = ";
 				}
 				else if (prot.status == STATUS_SUCCESS) { continue; }
 				else if (prot.get_field() == FIELD_NUMBER) {
 					std::string numberStr = std::to_string(prot.number);
 					double_remove_end_zero(numberStr);
-					std::cout << (prot.number >= 0 ? numberStr : "(" + numberStr + ')');
+					sync_cout << (prot.number >= 0 ? numberStr : "(" + numberStr + ')');
 				}
-				else if (prot.status == STATUS_OUT_OF_RANGE) { std::cout << "wynik poza zakresem"; }
+				else if (prot.status == STATUS_OUT_OF_RANGE) { sync_cout << "wynik poza zakresem"; }
 				else if (prot.get_field() == FIELD_CALCULATION_ID) {
-					std::cout << " | Identyfikator obliczeñ: " << prot.calculationId << '\n';
+					sync_cout << " | Identyfikator obliczeñ: " << prot.calculationId << '\n';
 				}
 			}
 		}
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-		system("pause");
+		CONSOLE_MANIP::press_any_key_pause();
 	}
 
 	//Wyœwietlanie sekwencji komunikatów
@@ -314,32 +317,32 @@ private:
 				//Status
 				else if (prot.get_field() == FIELD_STATUS) {
 					if (prot.status == STATUS_OUT_OF_RANGE) {
-						std::cout << " = wynik poza zakresem";
+						sync_cout << " = wynik poza zakresem";
 						argNum = 1;
 					}
 					else if (prot.status == STATUS_FORBIDDEN) {
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						std::cout << "Odmowa dostêpu!";
+						sync_cout << "Odmowa dostêpu!";
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 					}
 					else if (prot.status == STATUS_HISTORY_EMPTY) {
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						std::cout << "Historia pusta!";
+						sync_cout << "Historia pusta!";
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 					}
 					else if (prot.status == STATUS_NOT_FOUND) {
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						std::cout << "Nie znaleziono!";
+						sync_cout << "Nie znaleziono!";
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 					}
-					else if (prot.status == STATUS_SUCCESS) { std::cout << " = "; }
+					else if (prot.status == STATUS_SUCCESS) { sync_cout << " = "; }
 					else if (prot.status == STATUS_FOUND) { continue; }
 				}
 
 				//Id obliczeñ
 				else if (prot.get_field() == FIELD_CALCULATION_ID) {
 					CONSOLE_MANIP::cursor_set_pos(boxWidth - 40, CONSOLE_MANIP::cursor_get_pos().Y);
-					std::cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
+					sync_cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
 					equationNumber++;
 				}
 
@@ -349,7 +352,7 @@ private:
 					double_remove_end_zero(numberStr);
 
 					CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-					std::cout << numberStr << calcSign;
+					sync_cout << numberStr << calcSign;
 					argNum++;
 					if (isFactorial) { argNum++; isFactorial = false; }
 				}
@@ -358,7 +361,7 @@ private:
 					std::string numberStr = std::to_string(prot.number);
 					double_remove_end_zero(numberStr);
 					const double numberDouble = stod(numberStr);
-					std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
+					sync_cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
 					argNum++;
 				}
 				//Wynik
@@ -366,7 +369,7 @@ private:
 					std::string numberStr = std::to_string(prot.number);
 					double_remove_end_zero(numberStr);
 					const double numberDouble = stod(numberStr);
-					std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
+					sync_cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
 					argNum = 1;
 				}
 			}
@@ -390,7 +393,7 @@ private:
 		print_message_sequence_hist_whole(history);
 
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-		system("pause");
+		CONSOLE_MANIP::press_any_key_pause();
 	}
 
 	//Wyœwietlanie sekwencji komunikatów
@@ -415,31 +418,31 @@ private:
 				//Status
 				else if (prot.get_field() == FIELD_STATUS) {
 					if (prot.status == STATUS_OUT_OF_RANGE) {
-						std::cout << " = wynik poza zakresem";
+						sync_cout << " = wynik poza zakresem";
 						argNum = 1;
 					}
 					else if (prot.status == STATUS_FORBIDDEN) {
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						std::cout << "Odmowa dostêpu!";
+						sync_cout << "Odmowa dostêpu!";
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 					}
 					else if (prot.status == STATUS_HISTORY_EMPTY) {
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						std::cout << "Historia pusta!";
+						sync_cout << "Historia pusta!";
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 					}
 					else if (prot.status == STATUS_NOT_FOUND) {
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						std::cout << "Nie znaleziono!";
+						sync_cout << "Nie znaleziono!";
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 					}
-					else if (prot.status == STATUS_SUCCESS) { std::cout << " = "; }
+					else if (prot.status == STATUS_SUCCESS) { sync_cout << " = "; }
 					else if (prot.status == STATUS_FOUND) { continue; }
 				}
 
 				//Id obliczeñ
 				else if (prot.get_field() == FIELD_CALCULATION_ID) {
-					std::cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
+					sync_cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
 				}
 
 				//Argument 1
@@ -448,7 +451,7 @@ private:
 					double_remove_end_zero(numberStr);
 
 					CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-					std::cout << numberStr << calcSign;
+					sync_cout << numberStr << calcSign;
 					argNum++;
 					if (isFactorial) { argNum++; isFactorial = false; }
 				}
@@ -457,7 +460,7 @@ private:
 					std::string numberStr = std::to_string(prot.number);
 					double_remove_end_zero(numberStr);
 					const double numberDouble = stod(numberStr);
-					std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
+					sync_cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
 					argNum++;
 				}
 				//Wynik
@@ -465,7 +468,7 @@ private:
 					std::string numberStr = std::to_string(prot.number);
 					double_remove_end_zero(numberStr);
 					const double numberDouble = stod(numberStr);
-					std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
+					sync_cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
 					argNum = 1;
 				}
 			}
@@ -490,7 +493,7 @@ private:
 		print_message_sequence(history);
 
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-		system("pause");
+		CONSOLE_MANIP::press_any_key_pause();
 	}
 
 	//Funkcja wywo³uj¹ca wybieranie akcji i wykonuj¹ca wybór
@@ -514,7 +517,7 @@ private:
 				TextProtocol protocol(GET_CURRENT_TIME(), sessionId, 0);
 				protocol.operation = OP_END;
 				if (!send_text_protocol(protocol, FIELD_OPERATION)) {
-					std::cout << "B³¹d wysy³ania.\n";
+					sync_cout << "B³¹d wysy³ania.\n";
 				}
 				return;
 			}
@@ -704,8 +707,16 @@ public:
 	ClientUDP(const unsigned short& Port1) :NodeUDP(Port1) { messages = false; }
 
 	bool start_session() {
+		CONSOLE_MANIP::clear_console();
+		CONSOLE_MANIP::show_console_cursor(false);
+		bool textStop = false;
+		std::thread textThread(&ClientUDP::find_server_text, std::ref(textStop));
+
 		//Szukanie serwera
 		find_server();
+
+		textStop = true;
+		textThread.join();
 
 		action_choice();
 		return true;

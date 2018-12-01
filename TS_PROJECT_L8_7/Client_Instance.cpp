@@ -82,6 +82,6 @@ int main()
 	// Clean up and quit.
 	WSACleanup();
 	CONSOLE_MANIP::cursor_set_pos(boxWidth / 2 - question.length() / 2, boxHeight / 2);
-	system("PAUSE");
+	CONSOLE_MANIP::press_any_key_pause();
 	return 0;
 }

@@ -122,7 +122,7 @@ public:
 
 	//Czyszczenie konsoli za pomoc¹ funkcji z windows api
 	static void clear_console() noexcept {
-		COORD topLeft = { 0, 0 };
+		const COORD topLeft = { 0, 0 };
 		HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
 		CONSOLE_SCREEN_BUFFER_INFO screen;
 		DWORD written;
@@ -275,5 +275,45 @@ public:
 	static void print_text(const unsigned int &xPos, const unsigned int &yPos, const std::string &text1, const std::string &text2) {
 		cursor_set_pos(xPos, yPos);
 		sync_cout << text1 << text2;
+	}
+
+	static void press_any_key_text(bool& stop) {
+		auto timeStart = std::chrono::system_clock::now();
+		const std::string searchingText = "Naciœnij dowolny przycisk, aby kontynuowaæ ";
+		unsigned int dotNumber = 0;
+		std::string dotsText = "";
+
+		const COORD startCursorPosition = cursor_get_pos();
+
+		print_text(startCursorPosition.X, startCursorPosition.Y, searchingText + dotsText);
+		while (true) {
+			std::chrono::duration<double> time = std::chrono::system_clock::now() - timeStart;
+			if (time >= std::chrono::duration<double>(0.5)) {
+				dotNumber++;
+				if (dotNumber > 3) {
+					dotNumber = 0;
+					dotsText = "";
+				}
+				else { dotsText += ". "; }
+				print_text(startCursorPosition.X, startCursorPosition.Y, searchingText + "                    ");
+				print_text(startCursorPosition.X, startCursorPosition.Y, searchingText + dotsText);
+				timeStart = std::chrono::system_clock::now();
+			}
+			if (stop) {
+				return;
+			}
+		}
+	}
+
+	static void press_any_key_pause() {
+		show_console_cursor(false);
+		bool textStop = false;
+		std::thread textThread(&CONSOLE_MANIP::press_any_key_text, std::ref(textStop));
+
+		do { clear_console_input_buffer(); } while (!check_space()); //Waits for SPACE press
+
+		clear_console_input_buffer();
+		textStop = true;
+		textThread.join();
 	}
 };

@@ -16,30 +16,8 @@ inline int randInt(const int &min, const int &max) {
 }
 
 class ServerUDP : public NodeUDP {
+private:
 	sockaddr_in serverAddr{};
-
-public:
-	unsigned int calculationId = 1;
-
-	/**
-	 * Mapa przechowuj¹ca historie sesji. \n
-	 * Kluczem jest identyfikator sesji, a wartoœci¹ tablica odebranych i wys³anych protoko³ów.
-	*/
-	std::unordered_map<unsigned int, std::pair<unsigned int, std::vector<TextProtocol>>> history;
-	std::vector<unsigned int>sessionIds;
-
-	//Konstruktor i destruktor
-	ServerUDP(const unsigned short& Port1) : NodeUDP(Port1) {
-		serverAddr.sin_family = AF_INET;
-		serverAddr.sin_port = htons(Port1);
-		serverAddr.sin_addr.s_addr = INADDR_ANY;
-		//Bindowanie gniazdka dla adresu odbierania
-		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
-		if (iResult != 0) {
-			std::cout << "Bindowanie (inicjalizacja) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
-			return;
-		}
-	};
 
 	bool bind_to_address(const std::string& address) {
 		if (otherAddr.sin_addr.s_addr != inet_addr("127.0.0.1")) {
@@ -118,27 +96,9 @@ public:
 		return true;
 	}
 
-	//Rozpoczêcie sesji
-	bool start_session() {
-		//Czekanie na ¿¹danie rozpoczêcia sesji
-		if (listen_for_client()) { session(); }
 
-		closesocket(nodeSocket);
-		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-		serverAddr.sin_addr.s_addr = INADDR_ANY;
-		Sleep(100);
-		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
 
-		if (iResult != 0) {
-			std::cout << "Bindowanie (po sesji) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
-			return false;
-		}
-		else {
-			std::cout << "Bindowanie (po sesji) powiod³o siê\n";
-		}
-
-		return true;
-	}
+	//Funkcje obliczeñ ---------------------------------------------------------------------
 
 	//Dodawanie
 	static bool add(const double& argument1, const double& argument2, double& result) {
@@ -264,6 +224,10 @@ public:
 		}
 	}
 
+	//--------------------------------------------------------------------------------------
+
+
+
 	//Historia (dla sessionId sesji)
 	std::vector<TextProtocol> get_history_by_session_id(const unsigned int& sessionId) {
 		//Kontener do przechowywania komunikatów dla danego sessionId sesji
@@ -290,7 +254,7 @@ public:
 				sessionHistory.insert(sessionHistory.begin(), statusProtocol);
 
 				//Numer sekwencyjny dla wysy³anych komunikatów
-				unsigned int sequenceNumber = sessionHistory.size() - 1;
+				int sequenceNumber = sessionHistory.size() - 1;
 				//Zmienna u¿ywana do iterowania po historii
 				for (TextProtocol prot : sessionHistory) {
 					//Wys³anie komunikatu
@@ -405,5 +369,52 @@ public:
 				calculationId++;
 			}
 		}
+	}
+
+public:
+	unsigned int calculationId = 1;
+
+	/**
+	 * Mapa przechowuj¹ca historie sesji. \n
+	 * Kluczem jest identyfikator sesji, a wartoœci¹ tablica odebranych i wys³anych protoko³ów.
+	*/
+	std::unordered_map<unsigned int, std::pair<unsigned int, std::vector<TextProtocol>>> history;
+	std::vector<unsigned int>sessionIds;
+
+	//Konstruktor i destruktor
+	ServerUDP(const unsigned short& Port1) : NodeUDP(Port1) {
+		serverAddr.sin_family = AF_INET;
+		serverAddr.sin_port = htons(Port1);
+		serverAddr.sin_addr.s_addr = INADDR_ANY;
+		//Bindowanie gniazdka dla adresu odbierania
+		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
+		if (iResult != 0) {
+			std::cout << "Bindowanie (inicjalizacja) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			return;
+		}
+	};
+
+
+
+	//Rozpoczêcie sesji
+	bool start_session() {
+		//Czekanie na ¿¹danie rozpoczêcia sesji
+		if (listen_for_client()) { session(); }
+
+		closesocket(nodeSocket);
+		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		serverAddr.sin_addr.s_addr = INADDR_ANY;
+		Sleep(100);
+		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
+
+		if (iResult != 0) {
+			std::cout << "Bindowanie (po sesji) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			return false;
+		}
+		else {
+			std::cout << "Bindowanie (po sesji) powiod³o siê\n";
+		}
+
+		return true;
 	}
 };
