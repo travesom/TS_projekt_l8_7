@@ -1,7 +1,35 @@
 #pragma once
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 #include "Node.h"
 #include <array>
+
+
+//inline std::vector<std::string> GET_LOCAL_IP_ADDRESSES() {
+//	char ac[80];
+//	std::vector<std::string> result;
+//	if (gethostname(ac, sizeof(ac)) == SOCKET_ERROR) {
+//		std::cerr << "Error " << WSAGetLastError() <<
+//			" when getting local host name." << std::endl;
+//		return result;
+//	}
+//
+//	std::cout << "Host name is " << ac << "." << std::endl;
+//	struct hostent *phe = gethostbyname(ac);
+//	if (phe == 0) {
+//		std::cerr << "Yow! Bad host lookup." << std::endl;
+//		return result;
+//	}
+//
+//	for (int i = 0; phe->h_addr_list[i] != nullptr; ++i) {
+//		struct in_addr addr;
+//		memcpy(&addr, phe->h_addr_list[i], sizeof(struct in_addr));
+//		result.push_back(inet_ntoa(addr));
+//		std::cout << "Address " << i << ": " << result[i] << std::endl;
+//	}
+//	result.push_back("127.0.0.1");
+//	return result;
+//}
 
 class ClientUDP : public NodeUDP {
 private:
@@ -9,6 +37,8 @@ private:
 	const unsigned int boxHeight = 15;
 	const std::string actionChoice = "Wybór akcji:";
 	std::string sessionIdInfo = "Identyfikator sesji: " + std::to_string(sessionId);
+
+	//Funkcje wprowadzania danych ----------------------------------------------------------
 
 	//Wpisywanie 2 argumentów (u¿yte dla dodawania, odejmowania i mno¿enia)
 	static void arg_input_two_add(std::array<std::string, 2>& args) {
@@ -160,6 +190,45 @@ private:
 		}
 	}
 
+	//--------------------------------------------------------------------------------------
+
+	//Szukanie serwera i spisywanie odpoweidzi
+	bool find_server() {
+		//Wysy³anie ¿¹dania rozpoczêcia sesji do serwera
+		for (const std::string& address : GET_IP_TABLE()) {
+			//Wys³anie pola operacja
+			TextProtocol operationProtocol(GET_CURRENT_TIME(), sessionId, 1);
+			operationProtocol.operation = OP_BEGIN;
+			send_text_protocol_to(operationProtocol, operationProtocol.get_field(), address);
+
+			//Wys³¹nie adresu serwera
+			TextProtocol addressProtocol(GET_CURRENT_TIME(), sessionId, 0);
+			addressProtocol.address = address;
+			send_text_protocol_to(addressProtocol, addressProtocol.get_field(), address);
+		}
+
+		//Otrzymywanie odpowiedzi na ¿¹danie rozpoczêcia sesji
+		std::string clientAddress;
+		bool findSuccess = false;
+		while (true) {
+			std::string received;
+			receive_text_protocol(received);
+			std::cout << "Received: " << received << '\n';
+			const TextProtocol recvProtocol(received);
+
+			if (recvProtocol.get_field() == FIELD_OPERATION && recvProtocol.operation == OP_ID_SESSION) {
+				sessionId = recvProtocol.sessionId;
+				std::string sessionIdInfo = "Identyfikator sesji: " + std::to_string(sessionId);
+				findSuccess = true;
+			}
+			if (recvProtocol.sequenceNumber == 0) { break; }
+		}
+
+		if (!findSuccess) { return false; }
+
+		return true;
+	}
+
 	//Wysy³anie ¿¹dania obliczenia (zale¿ne od podanej funkcji
 	void calculation(void(*argInputFunc)(std::array<std::string, 2>&), const std::string& operation) {
 		//Podawanie argumentów
@@ -195,7 +264,7 @@ private:
 
 		//Parsowanie komunikatów
 		for (const TextProtocol& prot : receivedParts) {
-			if (prot.id == sessionId) {
+			if (prot.sessionId == sessionId) {
 				if (prot.operation == OP_STATUS) {
 					std::cout << " = ";
 				}
@@ -211,17 +280,18 @@ private:
 				}
 			}
 		}
+		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 		system("pause");
 	}
 
 	//Wyœwietlanie sekwencji komunikatów
-	void print_messages_sequence(const std::vector<TextProtocol>& sequence) const {
+	void print_message_sequence(const std::vector<TextProtocol>& sequence) const {
 		std::string calcSign;
 		unsigned int argNum = 1;
 		bool isFactorial = false;
 		std::cout << '\n';
 		for (const TextProtocol& prot : sequence) {
-			if (prot.id == sessionId) {
+			if (prot.sessionId == sessionId) {
 				//Operacje
 				if (prot.get_field() == FIELD_OPERATION) {
 					//Obliczenia
@@ -230,9 +300,6 @@ private:
 					else if (prot.operation == OP_SUBT) { calcSign = " - "; }
 					else if (prot.operation == OP_MULTP) { calcSign = " * "; }
 					else if (prot.operation == OP_DIV) { calcSign = " / "; }
-
-					//Wynik
-					else if (prot.operation == OP_STATUS) { std::cout << " = "; }
 				}
 
 				//Status
@@ -244,7 +311,8 @@ private:
 					else if (prot.status == STATUS_FORBIDDEN) { std::cout << "Odmowa dostêpu!"; }
 					else if (prot.status == STATUS_HISTORY_EMPTY) { std::cout << "Historia pusta!"; }
 					else if (prot.status == STATUS_NOT_FOUND) { std::cout << "Nie znaleziono!"; }
-					else if (prot.get_field() == FIELD_STATUS && prot.status == STATUS_SUCCESS) { continue; }
+					else if (prot.status == STATUS_SUCCESS) { std::cout << " = "; }
+					else if (prot.status == STATUS_FOUND) { continue; }
 				}
 
 				//Id obliczeñ
@@ -281,7 +349,7 @@ private:
 		std::cout << '\n';
 	}
 
-	//Historia (dla id sesji)
+	//Historia (dla sessionId sesji)
 	void history_by_session_id() {
 		TextProtocol histProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		histProtocol.operation = OP_HISTORY_WHOLE;
@@ -289,7 +357,7 @@ private:
 
 		const std::vector<TextProtocol> history = receive_messages();
 
-		print_messages_sequence(history);
+		print_message_sequence(history);
 
 		system("pause");
 	}
@@ -309,7 +377,7 @@ private:
 
 		const std::vector<TextProtocol>history = receive_messages();
 
-		print_messages_sequence(history);
+		print_message_sequence(history);
 
 		system("pause");
 	}
@@ -320,7 +388,7 @@ private:
 
 		unsigned int choice = 1;
 		while (true) {
-			//Wyœwietlanie obramowania, id sesji i tekstu odnoœnie wyboru
+			//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
 			CONSOLE_MANIP::clear_console();
 			CONSOLE_MANIP::show_console_cursor(false);
 			CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
@@ -401,7 +469,7 @@ private:
 		std::string factorialText = " Silnia z liczby.";
 
 		while (true) {
-			//Wyœwietlanie obramowania, id sesji i tekstu odnoœnie wyboru
+			//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
 			CONSOLE_MANIP::clear_console();
 			CONSOLE_MANIP::show_console_cursor(false);
 			CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
@@ -472,7 +540,7 @@ private:
 		std::string wholeHistory = " Wyœwietl ca³¹ historiê.";
 		std::string byCalcId = " Wyœwietl obliczenie o podanym identyfikatorze.";
 
-		//Wyœwietlanie obramowania, id sesji i tekstu odnoœnie wyboru
+		//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
 		CONSOLE_MANIP::clear_console();
 		CONSOLE_MANIP::show_console_cursor(false);
 		CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
@@ -520,31 +588,15 @@ private:
 public:
 	unsigned int sessionId = 0;
 
-	ClientUDP(const u_long& IP, const unsigned short& Port1) :NodeUDP(IP, Port1) {}
+	ClientUDP(const unsigned short& Port1) :NodeUDP(Port1) {}
 
 	bool start_session() {
-		TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, 0);
-		startProtocol.operation = OP_BEGIN;
-		//¯¹danie rozpoczêcia sesji
-		if (!send_text_protocol(startProtocol, FIELD_OPERATION)) {
-			std::cout << "B³¹d wysy³ania.\n";
-			system("pause");
-			return false;
-		}
-		//Odbieranie id
-		std::string received;
-		if (!receive_text_protocol(received)) {
-			std::cout << "B³¹d odbierania!\n";
-			system("pause");
-			return false;
-		}
-		startProtocol.from_string(received);
-		if (startProtocol.operation == OP_ID_SESSION) {
-			sessionId = startProtocol.id;
-		}
+		//Szukanie serwera
+		find_server();
+
+		system("pause");
 
 		action_choice();
-
 		return true;
 	}
 };

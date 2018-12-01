@@ -1,12 +1,7 @@
-﻿// TS_PROJECT_L8_7.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
+﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #pragma warning(disable:4996)
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include "Client.h"
-#include <string>
-#include <regex>
 
 const std::string question = "Czy chcesz rozpocząć ponownie sesję?";
 std::string no = " Nie";
@@ -17,10 +12,9 @@ int main()
 	Sleep(1000); //Na końcu usunąć
 	system("chcp 1250");
 
-	const u_long IP = inet_addr("127.0.0.1");
-	const unsigned short Port1 = 8888;
+	const unsigned short Port1 = 27272;
 
-	ClientUDP client(IP, Port1);
+	ClientUDP client(Port1);
 
 	//Pętla nawiązywania sesji
 	const unsigned int boxWidth = 80;

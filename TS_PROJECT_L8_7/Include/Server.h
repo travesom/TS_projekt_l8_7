@@ -16,6 +16,8 @@ inline int randInt(const int &min, const int &max) {
 }
 
 class ServerUDP : public NodeUDP {
+	sockaddr_in serverAddr{};
+
 public:
 	unsigned int calculationId = 1;
 
@@ -27,29 +29,76 @@ public:
 	std::vector<unsigned int>sessionIds;
 
 	//Konstruktor i destruktor
-	ServerUDP(const u_long& IP, const unsigned short& Port1) : NodeUDP(IP, Port1) {
+	ServerUDP(const unsigned short& Port1) : NodeUDP(Port1) {
+		serverAddr.sin_family = AF_INET;
+		serverAddr.sin_port = htons(Port1);
+		serverAddr.sin_addr.s_addr = INADDR_ANY;
 		//Bindowanie gniazdka dla adresu odbierania
-		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&nodeAddr), sizeof(nodeAddr));
+		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
 		if (iResult != 0) {
-			std::cout << "Bindowanie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			std::cout << "Bindowanie (inicjalizacja) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return;
 		}
 	};
 
-	//Rozpoczêcie sesji
-	bool start_session() {
-		//Czekanie na ¿¹danie sesji
+	bool bind_to_address(const std::string& address) {
+		if (otherAddr.sin_addr.s_addr != inet_addr("127.0.0.1")) {
+			closesocket(nodeSocket);
+			nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+			serverAddr.sin_addr.s_addr = inet_addr(address.c_str());
+			std::cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << '\n';
+			Sleep(100);
+			const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
+			if (iResult != 0) {
+				std::cout << "Bindowanie (funkcja) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+				return false;
+			}
+			else {
+				std::cout << "Bindowanie (funkcja) powiod³o siê\n";
+			}
+		}
+		return true;
+	}
+
+	//Wys³anie klientowi potwierdzenia
+	void answer_client(const unsigned int sessionId, const std::string address, const std::string serverAddress) {
+		//Wys³anie sessionId
+		TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, 2);
+		startProtocol.operation = OP_ID_SESSION;
+		send_text_protocol_to(startProtocol, FIELD_OPERATION, address);
+
+		//Wys³anie adresu serwera
+		TextProtocol addressProtocol(GET_CURRENT_TIME(), sessionId, 1);
+		addressProtocol.address = serverAddress;
+		send_text_protocol_to(addressProtocol, FIELD_ADDRESS, address);
+
+		//Wys³anie adresu klienta
+		TextProtocol clientAddressProtocol(GET_CURRENT_TIME(), sessionId, 0);
+		clientAddressProtocol.address = address;
+		send_text_protocol_to(clientAddressProtocol, FIELD_ADDRESS, address);
+	}
+
+	//Przyjmowanie zg³oszenia
+	bool listen_for_client() {
 		std::string received;
 		TextProtocol receivedProt;
 
-		//Czekanie na ¿¹danie rozpoczêcia sesji
-		while (receivedProt.operation != OP_BEGIN) {
+		while (true) {
 			receive_text_protocol(received);
+			std::cout << "Received: " << received << '\n';
 			receivedProt = TextProtocol(received);
+
+			if (receivedProt.operation == OP_BEGIN) {/*nic*/ }
+			if (receivedProt.get_field() == FIELD_ADDRESS) {
+				if (!bind_to_address(receivedProt.address)) { return false; }
+			}
+
+
+			if (receivedProt.sequenceNumber == 0) { break; }
 		}
 
-		//Wybieranie id sesji
-		unsigned int sessionId = receivedProt.id;
+		//Wybieranie sessionId sesji
+		unsigned int sessionId = receivedProt.sessionId;
 		//Jeœli klient nie ma identyfikatora sesji
 		if (sessionId == 0) {
 			while (true) {
@@ -59,14 +108,34 @@ public:
 			sessionIds.push_back(sessionId);
 		}
 
-		//Wys³anie id
+		//Wys³anie sessionId
 		TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		startProtocol.operation = OP_ID_SESSION;
-		if (!send_text_protocol(startProtocol, FIELD_OPERATION)) {
-			std::cout << "B³¹d wysy³ania.\n";
+		send_text_protocol(startProtocol, FIELD_OPERATION);
+		std::cout << "Sent: " << startProtocol.to_string(startProtocol.get_field()) << '\n';
+		std::cout << "Wysy³anie zakoñczone.\n";
+
+		return true;
+	}
+
+	//Rozpoczêcie sesji
+	bool start_session() {
+		//Czekanie na ¿¹danie rozpoczêcia sesji
+		if (listen_for_client()) { session(); }
+
+		closesocket(nodeSocket);
+		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		serverAddr.sin_addr.s_addr = INADDR_ANY;
+		Sleep(100);
+		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
+
+		if (iResult != 0) {
+			std::cout << "Bindowanie (po sesji) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return false;
 		}
-		else { session(); }
+		else {
+			std::cout << "Bindowanie (po sesji) powiod³o siê\n";
+		}
 
 		return true;
 	}
@@ -195,9 +264,9 @@ public:
 		}
 	}
 
-	//Historia (dla id sesji)
+	//Historia (dla sessionId sesji)
 	std::vector<TextProtocol> get_history_by_session_id(const unsigned int& sessionId) {
-		//Kontener do przechowywania komunikatów dla danego id sesji
+		//Kontener do przechowywania komunikatów dla danego sessionId sesji
 		std::vector<TextProtocol> result;
 
 		//Przegl¹danie historii
@@ -212,34 +281,36 @@ public:
 	}
 	void history_by_session_id(const unsigned int& sessionId) {
 		if (!history.empty()) {
-			//Kontener z histori¹ dla danego id sesji
+			//Kontener z histori¹ dla danego sessionId sesji
 			std::vector<TextProtocol> sessionHistory = get_history_by_session_id(sessionId);
 
-			TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
-			statusProtocol.status = STATUS_SUCCESS;
-			sessionHistory.insert(sessionHistory.begin(), statusProtocol);
+			if (!sessionHistory.empty()) {
+				TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, sessionHistory.size());
+				statusProtocol.status = STATUS_FOUND;
+				sessionHistory.insert(sessionHistory.begin(), statusProtocol);
 
-			//Numer sekwencyjny dla wysy³anych komunikatów
-			unsigned int sequenceNumber = sessionHistory.size() - 1;
-			//Zmienna u¿ywana do iterowania po historii
-			for (TextProtocol prot : sessionHistory) {
-				//Wys³anie komunikatu
-				prot.sequenceNumber = sequenceNumber;
-				std::cout << prot.to_string(prot.get_field()) << '\n';
+				//Numer sekwencyjny dla wysy³anych komunikatów
+				unsigned int sequenceNumber = sessionHistory.size() - 1;
+				//Zmienna u¿ywana do iterowania po historii
+				for (TextProtocol prot : sessionHistory) {
+					//Wys³anie komunikatu
+					prot.sequenceNumber = sequenceNumber;
+					std::cout << prot.to_string(prot.get_field()) << '\n';
 
-				send_text_protocol(prot, prot.get_field());
+					send_text_protocol(prot, prot.get_field());
 
-				//Zmniejszenie numeru sekwencyjnego i zwiêkszenie iteratora po historii
-				sequenceNumber--;
-				if (sequenceNumber < 0) { break; }
+					//Zmniejszenie numeru sekwencyjnego i zwiêkszenie iteratora po historii
+					sequenceNumber--;
+					if (sequenceNumber < 0) { break; }
+				}
 			}
 		}
-		else {
-			TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
-			statusProtocol.status = STATUS_HISTORY_EMPTY;
-			send_text_protocol(statusProtocol, statusProtocol.get_field());
-			std::cout << "Sent: " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
-		}
+
+		//Dla niepowodzeñ wyœlij historia pusta
+		TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
+		statusProtocol.status = STATUS_HISTORY_EMPTY;
+		send_text_protocol(statusProtocol, statusProtocol.get_field());
+		std::cout << "Sent: " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
 	}
 
 	//Historia identyfikatorze obliczeñ
@@ -264,12 +335,13 @@ public:
 					sequenceNumber--;
 
 					TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, sequenceNumber);
-					statusProtocol.status = STATUS_SUCCESS;
+					statusProtocol.status = STATUS_FOUND;
 					send_text_protocol(statusProtocol, statusProtocol.get_field());
 					sequenceNumber--;
 
 					for (TextProtocol prot : history[calcId].second) {
 						prot.sequenceNumber = sequenceNumber;
+						std::cout << prot.to_string(prot.get_field()) << '\n';
 						send_text_protocol(prot, prot.get_field());
 						sequenceNumber--;
 						if (sequenceNumber < 0) { break; }
@@ -308,34 +380,34 @@ public:
 				}
 				//Wyœwietlenie ca³ej historii dla obecnej
 				else if (operationProtocol.operation == OP_HISTORY_WHOLE) {
-					history_by_session_id(operationProtocol.id);
+					history_by_session_id(operationProtocol.sessionId);
 					continue;
 				}
 				else if (operationProtocol.operation == OP_HISTORY_ID) {
 					receive_text_protocol(received);
 					TextProtocol idProtocol(received);
-					history_by_calc_id(operationProtocol.id, idProtocol.calculationId);
+					history_by_calc_id(operationProtocol.sessionId, idProtocol.calculationId);
 					continue;
 				}
 
 				//Operacje do obliczeñ -----------------------------------------------------------------
 
 				//Wpisanie operacji do historii
-				history[calculationId].first = operationProtocol.id;
+				history[calculationId].first = operationProtocol.sessionId;
 				history[calculationId].second.push_back(operationProtocol);
 
 				//Dodawanie
-				if (operationProtocol.operation == OP_ADD) { calculation(&add, operationProtocol.id); }
+				if (operationProtocol.operation == OP_ADD) { calculation(&add, operationProtocol.sessionId); }
 				//Odejmowanie
-				else if (operationProtocol.operation == OP_SUBT) { calculation(&subtract, operationProtocol.id); }
+				else if (operationProtocol.operation == OP_SUBT) { calculation(&subtract, operationProtocol.sessionId); }
 				//Mno¿enie
-				else if (operationProtocol.operation == OP_MULTP) { calculation(&multiply, operationProtocol.id); }
+				else if (operationProtocol.operation == OP_MULTP) { calculation(&multiply, operationProtocol.sessionId); }
 				//Dzielenie
-				else if (operationProtocol.operation == OP_DIV) { calculation(&divide, operationProtocol.id); }
+				else if (operationProtocol.operation == OP_DIV) { calculation(&divide, operationProtocol.sessionId); }
 				//Silnia
-				else if (operationProtocol.operation == OP_FACT) { calculation(&factorial, operationProtocol.id); }
+				else if (operationProtocol.operation == OP_FACT) { calculation(&factorial, operationProtocol.sessionId); }
 
-				//Zwiêkszenie id obliczeñ
+				//Zwiêkszenie sessionId obliczeñ
 				calculationId++;
 			}
 		}

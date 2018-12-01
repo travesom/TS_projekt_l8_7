@@ -36,20 +36,21 @@ inline void double_remove_end_zero(std::string& numberStr) {
 class TextProtocol {
 public:
 	tm  time;   //znacznik czasowy
-	unsigned int id;             //Identyfikator sesji
+	unsigned int sessionId;             //Identyfikator sesji
 	unsigned int sequenceNumber; //Numer sekwencyjny (pole obowi¹zkowe)
 
 	std::string operation;      //Pole operacji
 	std::string status;         //Pole statusu
+	std::string address;        //Pole adresu (wykorzystywane przy szukaniu serwera)
 	double number;              //Pole liczby
 	unsigned int calculationId; //Identyfikator obliczeñ
 
 	//Konstruktor domyœlny
-	TextProtocol() : time(), id(NULL), sequenceNumber(NULL), operation(""), status(""), number(NAN), calculationId(NULL) {};
+	TextProtocol() : time(), sessionId(NULL), sequenceNumber(NULL), operation(""), status(""), number(NAN), calculationId(NULL) {};
 
 	TextProtocol(const tm& time_, const unsigned int& id_, const unsigned int& sequenceNumber_) : TextProtocol() {
 		time = time_;
-		id = id_;
+		sessionId = id_;
 		sequenceNumber = sequenceNumber_;
 	}
 
@@ -72,7 +73,7 @@ public:
 		}
 
 		//Dodanie identyfikatora sesji (pole obowi¹zkowe)
-		result += HEAD_SESSION_ID + std::to_string(id) + ' ';
+		result += HEAD_SESSION_ID + std::to_string(sessionId) + ' ';
 
 		//Pole numer sekwencyjny (pole obowi¹zkowe)
 		result += HEAD_SEQNUM; result += std::to_string(sequenceNumber) + ' ';
@@ -85,10 +86,12 @@ public:
 			double_remove_end_zero(numberStr);
 			result += HEAD_NUMBER + numberStr;
 		}
-		//Pole id obliczeñ
+		//Pole sessionId obliczeñ
 		else if (field == FIELD_CALCULATION_ID) { result += HEAD_CALC_ID + std::to_string(calculationId); }
 		//Pole status
 		else if (field == FIELD_STATUS) { result += HEAD_STATUS + status; }
+		//Pole status
+		else if (field == FIELD_ADDRESS) { result += HEAD_ADDRESS + address; }
 
 		result += ' ';
 
@@ -96,8 +99,9 @@ public:
 	}
 	unsigned int get_field() const {
 		if (!operation.empty()) { return FIELD_OPERATION; }
-		if (calculationId != 0) { return FIELD_CALCULATION_ID; }
+		if (!address.empty()) { return FIELD_ADDRESS; }
 		if (!status.empty()) { return FIELD_STATUS; }
+		if (calculationId != 0) { return FIELD_CALCULATION_ID; }
 		if (!isnan(number)) { return FIELD_NUMBER; }
 		return FIELD_NO_ADDITIONAL;
 	}
@@ -105,108 +109,123 @@ public:
 	//Deserializacja
 	void from_string(const std::string& data) {
 		this->clear();
-		auto iterator = data.find(HEAD_TIME);
-		std::string temp;
+		if (!data.empty()) {
+			auto iterator = data.find(HEAD_TIME);
+			std::string temp;
 
-		//Czas (pole obowi¹zkowe)
-		{
-			//Godziny
-			temp.clear();
-			for (auto i = iterator + HEAD_TIME.length(); i <= iterator + HEAD_TIME.length() + 1; i++) {
-				temp += data[i];
-			}
-			time.tm_hour = std::stoi(temp);
-
-			//Minuty
-			temp.clear();
-			for (auto i = iterator + HEAD_TIME.length() + 3; i <= iterator + HEAD_TIME.length() + 4; i++) {
-				temp += data[i];
-			}
-			time.tm_min = std::stoi(temp);
-
-
-			//Sekundy
-			temp.clear();
-			for (auto i = iterator + HEAD_TIME.length() + 6; i <= iterator + HEAD_TIME.length() + 7; i++) {
-				temp += data[i];
-			}
-			time.tm_sec = std::stoi(temp);
-		}
-
-		//Numer Identyfikacyjny (pole obowi¹zkowe)
-		{
-			temp.clear();
-			iterator = data.find(HEAD_SESSION_ID);
-			for (auto i = iterator + HEAD_SESSION_ID.length(); i < data.size(); i++) {
-				if (data[i] == '\0' || data[i] == ' ') { break; }
-				temp += data[i];
-			}
-			temp += ' ';
-			id = std::stoi(temp);
-		}
-
-		//OPERACJA (pole obowi¹zkowe)
-		{
-			iterator = data.find(HEAD_OPERATION);
-			if (iterator != std::string::npos) {
+			//Czas (pole obowi¹zkowe)
+			{
+				//Godziny
 				temp.clear();
-				for (auto i = iterator + HEAD_OPERATION.length(); i < data.size(); i++) {
+				for (auto i = iterator + HEAD_TIME.length(); i <= iterator + HEAD_TIME.length() + 1; i++) {
+					temp += data[i];
+				}
+				time.tm_hour = std::stoi(temp);
+
+				//Minuty
+				temp.clear();
+				for (auto i = iterator + HEAD_TIME.length() + 3; i <= iterator + HEAD_TIME.length() + 4; i++) {
+					temp += data[i];
+				}
+				time.tm_min = std::stoi(temp);
+
+
+				//Sekundy
+				temp.clear();
+				for (auto i = iterator + HEAD_TIME.length() + 6; i <= iterator + HEAD_TIME.length() + 7; i++) {
+					temp += data[i];
+				}
+				time.tm_sec = std::stoi(temp);
+			}
+
+			//Numer Identyfikacyjny (pole obowi¹zkowe)
+			{
+				temp.clear();
+				iterator = data.find(HEAD_SESSION_ID);
+				for (auto i = iterator + HEAD_SESSION_ID.length(); i < data.size(); i++) {
 					if (data[i] == '\0' || data[i] == ' ') { break; }
 					temp += data[i];
 				}
-				operation = temp;
+				temp += ' ';
+				sessionId = std::stoi(temp);
 			}
-		}
 
-		//Status 
-		{
-			iterator = data.find(HEAD_STATUS);
-			if (iterator != std::string::npos) {
-				temp.clear();
-				for (auto i = iterator + HEAD_STATUS.length(); i < data.size(); i++) {
-					if (data[i] == '\0' || data[i] == ' ') { break; }
-					temp += data[i];
+			//Numer Sekwencyjny (pole obowi¹zkowe)
+			{
+				iterator = data.find(HEAD_SEQNUM);
+				if (iterator != std::string::npos) {
+					temp.clear();
+					for (auto i = iterator + HEAD_SEQNUM.length(); i < data.size(); i++) {
+						if (data[i] == '\0' || data[i] == ' ') { break; }
+						temp += data[i];
+					}
+					sequenceNumber = std::stoi(temp);
 				}
-				status = temp;
 			}
-		}
 
-		//Liczba
-		{
-			iterator = data.find(HEAD_NUMBER);
-			if (iterator != std::string::npos) {
-				temp.clear();
-				for (auto i = iterator + HEAD_NUMBER.length(); i < data.size(); i++) {
-					if (data[i] == '\0' || data[i] == ' ') { break; }
-					temp += data[i];
+			//OPERACJA
+			{
+				iterator = data.find(HEAD_OPERATION);
+				if (iterator != std::string::npos) {
+					temp.clear();
+					for (auto i = iterator + HEAD_OPERATION.length(); i < data.size(); i++) {
+						if (data[i] == '\0' || data[i] == ' ') { break; }
+						temp += data[i];
+					}
+					operation = temp;
 				}
-				number = stod(temp);
 			}
-		}
 
-		//Identyfikator obliczeñ
-		{
-			iterator = data.find(HEAD_CALC_ID);
-			if (iterator != std::string::npos) {
-				temp.clear();
-				for (auto i = iterator + HEAD_CALC_ID.length(); i < data.size(); i++) {
-					if (data[i] == '\0' || data[i] == ' ') { break; }
-					temp += data[i];
+			//Status 
+			{
+				iterator = data.find(HEAD_STATUS);
+				if (iterator != std::string::npos) {
+					temp.clear();
+					for (auto i = iterator + HEAD_STATUS.length(); i < data.size(); i++) {
+						if (data[i] == '\0' || data[i] == ' ') { break; }
+						temp += data[i];
+					}
+					status = temp;
 				}
-				calculationId = stoi(temp);
 			}
-		}
 
-		//Numer Sekwencyjny
-		{
-			iterator = data.find(HEAD_SEQNUM);
-			if (iterator != std::string::npos) {
-				temp.clear();
-				for (auto i = iterator + HEAD_SEQNUM.length(); i < data.size(); i++) {
-					if (data[i] == '\0' || data[i] == ' ') { break; }
-					temp += data[i];
+			//Liczba
+			{
+				iterator = data.find(HEAD_NUMBER);
+				if (iterator != std::string::npos) {
+					temp.clear();
+					for (auto i = iterator + HEAD_NUMBER.length(); i < data.size(); i++) {
+						if (data[i] == '\0' || data[i] == ' ') { break; }
+						temp += data[i];
+					}
+					number = stod(temp);
 				}
-				sequenceNumber = std::stoi(temp);
+			}
+
+			//Identyfikator obliczeñ
+			{
+				iterator = data.find(HEAD_CALC_ID);
+				if (iterator != std::string::npos) {
+					temp.clear();
+					for (auto i = iterator + HEAD_CALC_ID.length(); i < data.size(); i++) {
+						if (data[i] == '\0' || data[i] == ' ') { break; }
+						temp += data[i];
+					}
+					calculationId = stoi(temp);
+				}
+			}
+
+			//Adres
+			{
+				iterator = data.find(HEAD_ADDRESS);
+				if (iterator != std::string::npos) {
+					temp.clear();
+					for (auto i = iterator + HEAD_ADDRESS.length(); i < data.size(); i++) {
+						if (data[i] == '\0' || data[i] == ' ') { break; }
+						temp += data[i];
+					}
+					address = temp;
+				}
 			}
 		}
 	}
@@ -217,7 +236,7 @@ public:
 		status.clear();
 		number = NAN;
 		sequenceNumber = NULL;
-		id = NULL;
+		sessionId = NULL;
 		calculationId = NULL;
 		time = tm();
 	}
