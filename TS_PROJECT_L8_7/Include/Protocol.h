@@ -56,7 +56,7 @@ public:
 
 	explicit TextProtocol(const std::string& data) { from_string(data); }
 
-	virtual ~TextProtocol() = default;;
+	virtual ~TextProtocol() = default;
 
 	//Serializacja
 	std::string to_string(const int& field) const {

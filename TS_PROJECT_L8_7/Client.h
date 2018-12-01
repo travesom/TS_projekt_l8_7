@@ -285,11 +285,20 @@ private:
 	}
 
 	//Wyœwietlanie sekwencji komunikatów
-	void print_message_sequence(const std::vector<TextProtocol>& sequence) const {
+	void print_message_sequence_hist_whole(const std::vector<TextProtocol>& sequence) const {
 		std::string calcSign;
 		unsigned int argNum = 1;
 		bool isFactorial = false;
-		std::cout << '\n';
+
+		//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
+		if (sequence[0].sequenceNumber != 0) {
+			CONSOLE_MANIP::clear_console();
+			CONSOLE_MANIP::show_console_cursor(false);
+		}
+
+		unsigned int equationNumber = 0;
+		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 3);
+
 		for (const TextProtocol& prot : sequence) {
 			if (prot.sessionId == sessionId) {
 				//Operacje
@@ -305,25 +314,41 @@ private:
 				//Status
 				else if (prot.get_field() == FIELD_STATUS) {
 					if (prot.status == STATUS_OUT_OF_RANGE) {
-						std::cout << "wynik poza zakresem";
+						std::cout << " = wynik poza zakresem";
 						argNum = 1;
 					}
-					else if (prot.status == STATUS_FORBIDDEN) { std::cout << "Odmowa dostêpu!"; }
-					else if (prot.status == STATUS_HISTORY_EMPTY) { std::cout << "Historia pusta!"; }
-					else if (prot.status == STATUS_NOT_FOUND) { std::cout << "Nie znaleziono!"; }
+					else if (prot.status == STATUS_FORBIDDEN) {
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+						std::cout << "Odmowa dostêpu!";
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+					}
+					else if (prot.status == STATUS_HISTORY_EMPTY) {
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+						std::cout << "Historia pusta!";
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+					}
+					else if (prot.status == STATUS_NOT_FOUND) {
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+						std::cout << "Nie znaleziono!";
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+					}
 					else if (prot.status == STATUS_SUCCESS) { std::cout << " = "; }
 					else if (prot.status == STATUS_FOUND) { continue; }
 				}
 
 				//Id obliczeñ
 				else if (prot.get_field() == FIELD_CALCULATION_ID) {
+					CONSOLE_MANIP::cursor_set_pos(boxWidth - 40, CONSOLE_MANIP::cursor_get_pos().Y);
 					std::cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
+					equationNumber++;
 				}
 
 				//Argument 1
 				else if (prot.get_field() == FIELD_NUMBER && argNum == 1) {
 					std::string numberStr = std::to_string(prot.number);
 					double_remove_end_zero(numberStr);
+
+					CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
 					std::cout << numberStr << calcSign;
 					argNum++;
 					if (isFactorial) { argNum++; isFactorial = false; }
@@ -346,7 +371,12 @@ private:
 				}
 			}
 		}
-		std::cout << '\n';
+
+		const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
+		CONSOLE_MANIP::print_text(2, 1, "Ca³a Twoja Historia");
+		CONSOLE_MANIP::print_box(0, 0, boxWidth, equationNumber + 4);
+		CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
+		CONSOLE_MANIP::cursor_set_pos(cursorPos);
 	}
 
 	//Historia (dla sessionId sesji)
@@ -357,9 +387,89 @@ private:
 
 		const std::vector<TextProtocol> history = receive_messages();
 
-		print_message_sequence(history);
+		print_message_sequence_hist_whole(history);
 
+		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 		system("pause");
+	}
+
+	//Wyœwietlanie sekwencji komunikatów
+	void print_message_sequence(const std::vector<TextProtocol>& sequence) const {
+		std::string calcSign;
+		unsigned int argNum = 1;
+		bool isFactorial = false;
+
+		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+		for (const TextProtocol& prot : sequence) {
+			if (prot.sessionId == sessionId) {
+				//Operacje
+				if (prot.get_field() == FIELD_OPERATION) {
+					//Obliczenia
+					if (prot.operation == OP_FACT) { calcSign = "!"; isFactorial = true; }
+					else if (prot.operation == OP_ADD) { calcSign = " + "; }
+					else if (prot.operation == OP_SUBT) { calcSign = " - "; }
+					else if (prot.operation == OP_MULTP) { calcSign = " * "; }
+					else if (prot.operation == OP_DIV) { calcSign = " / "; }
+				}
+
+				//Status
+				else if (prot.get_field() == FIELD_STATUS) {
+					if (prot.status == STATUS_OUT_OF_RANGE) {
+						std::cout << " = wynik poza zakresem";
+						argNum = 1;
+					}
+					else if (prot.status == STATUS_FORBIDDEN) {
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+						std::cout << "Odmowa dostêpu!";
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+					}
+					else if (prot.status == STATUS_HISTORY_EMPTY) {
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+						std::cout << "Historia pusta!";
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+					}
+					else if (prot.status == STATUS_NOT_FOUND) {
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+						std::cout << "Nie znaleziono!";
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+					}
+					else if (prot.status == STATUS_SUCCESS) { std::cout << " = "; }
+					else if (prot.status == STATUS_FOUND) { continue; }
+				}
+
+				//Id obliczeñ
+				else if (prot.get_field() == FIELD_CALCULATION_ID) {
+					std::cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
+				}
+
+				//Argument 1
+				else if (prot.get_field() == FIELD_NUMBER && argNum == 1) {
+					std::string numberStr = std::to_string(prot.number);
+					double_remove_end_zero(numberStr);
+
+					CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+					std::cout << numberStr << calcSign;
+					argNum++;
+					if (isFactorial) { argNum++; isFactorial = false; }
+				}
+				//Argument 2
+				else if (prot.get_field() == FIELD_NUMBER && argNum == 2) {
+					std::string numberStr = std::to_string(prot.number);
+					double_remove_end_zero(numberStr);
+					const double numberDouble = stod(numberStr);
+					std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
+					argNum++;
+				}
+				//Wynik
+				else if (prot.get_field() == FIELD_NUMBER && argNum == 3) {
+					std::string numberStr = std::to_string(prot.number);
+					double_remove_end_zero(numberStr);
+					const double numberDouble = stod(numberStr);
+					std::cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
+					argNum = 1;
+				}
+			}
+		}
 	}
 
 	//Historia identyfikatorze obliczeñ
@@ -379,6 +489,7 @@ private:
 
 		print_message_sequence(history);
 
+		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 		system("pause");
 	}
 
@@ -421,7 +532,7 @@ private:
 	}
 
 	//Menu wybierania akcji
-	void action_choice_main_menu(unsigned int& choice) {
+	void action_choice_main_menu(unsigned int& choice) const {
 		const std::string actionChoice = "Wybór akcji:";
 		std::string disconnect = " Zakoñczenie sesji.";
 		std::string calculate = " Obliczenie.";
@@ -509,7 +620,7 @@ private:
 			}
 			//Przejœcie do wykonywania wybranego dzia³ania
 			//Powrót
-			if (choiceCalc == 1) { break;; }
+			if (choiceCalc == 1) { break; }
 			//Dodawanie
 			else if (choiceCalc == 2) {
 				calculation(&arg_input_two_add, OP_ADD);
@@ -540,61 +651,61 @@ private:
 		std::string wholeHistory = " Wyœwietl ca³¹ historiê.";
 		std::string byCalcId = " Wyœwietl obliczenie o podanym identyfikatorze.";
 
-		//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
-		CONSOLE_MANIP::clear_console();
-		CONSOLE_MANIP::show_console_cursor(false);
-		CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
-		CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
-		CONSOLE_MANIP::print_text(2, 2, actionChoice);
-
 		while (true) {
-			//DODAWANIE wskaŸnika wybranej opcji
-			goBackText[0] = ' ';
-			wholeHistory[0] = ' ';
-			byCalcId[0] = ' ';
-			if (choiceCalc == 1) { goBackText[0] = '>'; }
-			else if (choiceCalc == 2) { wholeHistory[0] = '>'; }
-			else if (choiceCalc == 3) { byCalcId[0] = '>'; }
+			//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
+			CONSOLE_MANIP::clear_console();
+			CONSOLE_MANIP::show_console_cursor(false);
+			CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
+			CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
+			CONSOLE_MANIP::print_text(2, 2, actionChoice);
 
-			//Wyœwietlanie opcji
-			CONSOLE_MANIP::print_text(2, 4, goBackText);
-			CONSOLE_MANIP::print_text(2, 5, wholeHistory);
-			CONSOLE_MANIP::print_text(2, 6, byCalcId);
+			while (true) {
+				//DODAWANIE wskaŸnika wybranej opcji
+				goBackText[0] = ' ';
+				wholeHistory[0] = ' ';
+				byCalcId[0] = ' ';
+				if (choiceCalc == 1) { goBackText[0] = '>'; }
+				else if (choiceCalc == 2) { wholeHistory[0] = '>'; }
+				else if (choiceCalc == 3) { byCalcId[0] = '>'; }
 
-			//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
-			// jego akcja nie zosta³a wielokrotnie wykonana
-			CONSOLE_MANIP::clear_console_input_buffer();
+				//Wyœwietlanie opcji
+				CONSOLE_MANIP::print_text(2, 4, goBackText);
+				CONSOLE_MANIP::print_text(2, 5, wholeHistory);
+				CONSOLE_MANIP::print_text(2, 6, byCalcId);
 
-			//Sprawdzanie naciœniêtych klawiszy
-			if (CONSOLE_MANIP::check_arrow("UP") && choiceCalc > 1) { choiceCalc--; }
-			else if (CONSOLE_MANIP::check_arrow("DOWN") && choiceCalc < 3) { choiceCalc++; }
-			else if (CONSOLE_MANIP::check_enter()) { break; }
-		}
+				//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
+				// jego akcja nie zosta³a wielokrotnie wykonana
+				CONSOLE_MANIP::clear_console_input_buffer();
 
-		//Przejœcie do wykonywania wybranej akcji
+				//Sprawdzanie naciœniêtych klawiszy
+				if (CONSOLE_MANIP::check_arrow("UP") && choiceCalc > 1) { choiceCalc--; }
+				else if (CONSOLE_MANIP::check_arrow("DOWN") && choiceCalc < 3) { choiceCalc++; }
+				else if (CONSOLE_MANIP::check_enter()) { break; }
+			}
 
-		//Powrót
-		if (choiceCalc == 1) { return; }
-		//Ca³a historia
-		else if (choiceCalc == 2) {
-			history_by_session_id();
-		}
-		//Po identyfikatorze obliczeñ
-		else if (choiceCalc == 3) {
-			history_by_calc_id();
+			//Przejœcie do wykonywania wybranej akcji
+
+			//Powrót
+			if (choiceCalc == 1) { break; }
+			//Ca³a historia
+			else if (choiceCalc == 2) {
+				history_by_session_id();
+			}
+			//Po identyfikatorze obliczeñ
+			else if (choiceCalc == 3) {
+				history_by_calc_id();
+			}
 		}
 	}
 
 public:
 	unsigned int sessionId = 0;
 
-	ClientUDP(const unsigned short& Port1) :NodeUDP(Port1) {}
+	ClientUDP(const unsigned short& Port1) :NodeUDP(Port1) { messages = false; }
 
 	bool start_session() {
 		//Szukanie serwera
 		find_server();
-
-		system("pause");
 
 		action_choice();
 		return true;

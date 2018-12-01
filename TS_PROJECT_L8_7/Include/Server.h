@@ -303,9 +303,9 @@ public:
 					sequenceNumber--;
 					if (sequenceNumber < 0) { break; }
 				}
+				return;
 			}
 		}
-
 		//Dla niepowodzeñ wyœlij historia pusta
 		TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		statusProtocol.status = STATUS_HISTORY_EMPTY;
@@ -346,21 +346,15 @@ public:
 						sequenceNumber--;
 						if (sequenceNumber < 0) { break; }
 					}
+					return;
 				}
 			}
-			else {
-				TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
-				statusProtocol.status = STATUS_NOT_FOUND;
-				send_text_protocol(statusProtocol, statusProtocol.get_field());
-				std::cout << "Sent: " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
-			}
 		}
-		else {
-			TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
-			statusProtocol.status = STATUS_HISTORY_EMPTY;
-			send_text_protocol(statusProtocol, statusProtocol.get_field());
-			std::cout << "Sent: " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
-		}
+
+		TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
+		statusProtocol.status = STATUS_NOT_FOUND;
+		send_text_protocol(statusProtocol, statusProtocol.get_field());
+		std::cout << "Sent: " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
 	}
 
 	bool session() {

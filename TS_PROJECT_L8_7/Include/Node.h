@@ -76,6 +76,7 @@ static const unsigned int id_message_size = 57;
 
 class NodeUDP {
 protected:
+	bool messages = true;
 	WSADATA wsaData{};
 	SOCKET nodeSocket;
 	sockaddr_in otherAddr{};
@@ -85,15 +86,14 @@ protected:
 		//Inicjalizacja WinSock
 		const int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 		if (iResult != NO_ERROR) {
-			std::cout << "WSAStartup failed with error " << iResult << "\n";
-			system("pause");
+			if (messages) { std::cout << "WSAStartup failed with error " << iResult << "\n"; }
 			return;
 		}
 
 		//Tworzenie gniazdka do wysy³ania
 		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (nodeSocket == INVALID_SOCKET) {
-			std::cout << "socket niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			if (messages) { std::cout << "socket niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
 			WSACleanup();
 			return;
 		}
@@ -103,7 +103,7 @@ protected:
 		otherAddr.sin_port = htons(Port1);
 		otherAddr.sin_addr.s_addr = INADDR_ANY;
 	}
-	~NodeUDP(){ WSACleanup(); }
+	~NodeUDP() { WSACleanup(); }
 
 public:
 	bool receive_text_protocol(std::string& received) {
@@ -119,7 +119,7 @@ public:
 			if (iResult != SOCKET_ERROR) { break; }
 		}
 		if (iResult == SOCKET_ERROR) {
-			std::cout << "Odbieranie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			if (messages) { std::cout << "Odbieranie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
 			return false;
 		}
 
@@ -130,7 +130,7 @@ public:
 			if (recvBuffer[i] != NULL) {
 				result.push_back(recvBuffer[i]);
 			}
-			else { 
+			else {
 				//NULL termination
 				result.push_back(recvBuffer[i]);
 				break;
@@ -147,7 +147,7 @@ public:
 
 		const int iResult = sendto(nodeSocket, sendStr.c_str(), sendStr.length(), 0, reinterpret_cast<SOCKADDR *>(&otherAddr), sizeof(otherAddr));
 		if (iResult == SOCKET_ERROR) {
-			std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			if (messages) { std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
 			closesocket(nodeSocket);
 			WSACleanup();
 			return false;
@@ -169,7 +169,7 @@ public:
 		const int iResult = sendto(nodeSocket, sendStr.c_str(), sendStr.length(), 0, reinterpret_cast<SOCKADDR *>(&addr), sizeof(addr));
 
 		if (iResult == SOCKET_ERROR) {
-			std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			if (messages) { std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
 		}
 	}
 
