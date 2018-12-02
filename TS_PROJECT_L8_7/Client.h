@@ -3,14 +3,110 @@
 
 #include "Node.h"
 #include <array>
-#include <chrono>
 
 class ClientUDP : public NodeUDP {
 private:
 	const unsigned int boxWidth = 100;
-	const unsigned int boxHeight = 15;
+	const unsigned int boxHeight = 14;
 	const std::string actionChoice = "Wybór akcji:";
 	std::string sessionIdInfo = "Identyfikator sesji: " + std::to_string(sessionId);
+
+	//Wyœwietlanie napisu "Poszukiwanie serwera
+	static void find_server_text(bool& stop) {
+		auto timeStart = std::chrono::system_clock::now();
+		const std::string searchingText = "Szukanie serwera ";
+		unsigned int dotNumber = 0;
+		std::string dotsText = "";
+
+		CONSOLE_MANIP::print_text(3, 2, searchingText + dotsText);
+		while (true) {
+			std::chrono::duration<double> time = std::chrono::system_clock::now() - timeStart;
+			if (time >= std::chrono::duration<double>(0.5)) {
+				dotNumber++;
+				if (dotNumber > 3) {
+					dotNumber = 0;
+					dotsText = "";
+				}
+				else { dotsText += ". "; }
+				CONSOLE_MANIP::print_text(3, 2, searchingText + "                  ");
+				CONSOLE_MANIP::print_text(3, 2, searchingText + dotsText);
+				timeStart = std::chrono::system_clock::now();
+			}
+			if (stop) {
+				return;
+			}
+		}
+	}
+
+	//Szukanie serwera i spisywanie odpoweidzi
+	bool find_server() {
+		CONSOLE_MANIP::clear_console();
+		CONSOLE_MANIP::show_console_cursor(false);
+		bool textStop = false;
+		std::thread textThread(&ClientUDP::find_server_text, std::ref(textStop));
+
+		//Wysy³anie ¿¹dania rozpoczêcia sesji do serwera
+		for (const std::string& address : GET_IP_TABLE()) {
+			//Wys³anie pola operacja
+			TextProtocol operationProtocol(GET_CURRENT_TIME(), sessionId, 1);
+			operationProtocol.operation = OP_BEGIN;
+			send_text_protocol_to(operationProtocol, operationProtocol.get_field(), address);
+
+			//Wys³¹nie adresu serwera
+			TextProtocol addressProtocol(GET_CURRENT_TIME(), sessionId, 0);
+			addressProtocol.address = address;
+			send_text_protocol_to(addressProtocol, addressProtocol.get_field(), address);
+		}
+
+		//Otrzymywanie odpowiedzi na ¿¹danie rozpoczêcia sesji
+		bool findSuccess = false;
+		byte failCount = 0;
+		while (true) {
+			std::string received;
+			if (receive_text_protocol(received)) {
+				const TextProtocol recvProtocol(received);
+
+				if (recvProtocol.get_field() == FIELD_OPERATION && recvProtocol.operation == OP_ID_SESSION) {
+					sessionId = recvProtocol.sessionId;
+					sessionIdInfo = "Identyfikator sesji: " + std::to_string(sessionId);
+					findSuccess = true;
+				}
+				if (recvProtocol.sequenceNumber == 0) { break; }
+			}
+			else {
+				CONSOLE_MANIP::print_text(3 + 2 * failCount, 1, "X");
+				failCount++;
+			}
+			if (failCount == 11) { break; }
+			else {
+				//Wysy³anie ¿¹dania rozpoczêcia sesji do serwera
+				for (const std::string& address : GET_IP_TABLE()) {
+					//Wys³anie pola operacja
+					TextProtocol operationProtocol(GET_CURRENT_TIME(), sessionId, 1);
+					operationProtocol.operation = OP_BEGIN;
+					send_text_protocol_to(operationProtocol, operationProtocol.get_field(), address);
+
+					//Wys³¹nie adresu serwera
+					TextProtocol addressProtocol(GET_CURRENT_TIME(), sessionId, 0);
+					addressProtocol.address = address;
+					send_text_protocol_to(addressProtocol, addressProtocol.get_field(), address);
+				}
+			}
+		}
+
+		if (failCount < 11) {
+			//Wys³anie potwierdzenia
+			TextProtocol ackProtocol(GET_CURRENT_TIME(), sessionId, 0);
+			ackProtocol.operation = OP_ACK;
+			send_text_protocol(ackProtocol, ackProtocol.get_field());
+		}
+
+		textStop = true;
+		textThread.join();
+		if (!findSuccess) { return false; }
+
+		return true;
+	}
 
 
 
@@ -170,69 +266,7 @@ private:
 
 
 
-	//Wyœwietlanie napisu "Poszukiwanie serwera
-	static void find_server_text(bool& stop) {
-		auto timeStart = std::chrono::system_clock::now();
-		const std::string searchingText = "Szukanie serwera ";
-		unsigned int dotNumber = 0;
-		std::string dotsText = "";
-
-		CONSOLE_MANIP::print_text(3, 3, searchingText + dotsText);
-		while (true) {
-			std::chrono::duration<double> time = std::chrono::system_clock::now() - timeStart;
-			if (time >= std::chrono::duration<double>(0.5)) {
-				dotNumber++;
-				if (dotNumber > 3) {
-					dotNumber = 0;
-					dotsText = "";
-				}
-				else { dotsText += ". "; }
-				CONSOLE_MANIP::print_text(3, 3, searchingText + "                  ");
-				CONSOLE_MANIP::print_text(3, 3, searchingText + dotsText);
-				timeStart = std::chrono::system_clock::now();
-			}
-			if (stop) {
-				return;
-			}
-		}
-	}
-
-	//Szukanie serwera i spisywanie odpoweidzi
-	bool find_server() {
-		//Wysy³anie ¿¹dania rozpoczêcia sesji do serwera
-		for (const std::string& address : GET_IP_TABLE()) {
-			//Wys³anie pola operacja
-			TextProtocol operationProtocol(GET_CURRENT_TIME(), sessionId, 1);
-			operationProtocol.operation = OP_BEGIN;
-			send_text_protocol_to(operationProtocol, operationProtocol.get_field(), address);
-
-			//Wys³¹nie adresu serwera
-			TextProtocol addressProtocol(GET_CURRENT_TIME(), sessionId, 0);
-			addressProtocol.address = address;
-			send_text_protocol_to(addressProtocol, addressProtocol.get_field(), address);
-		}
-
-		//Otrzymywanie odpowiedzi na ¿¹danie rozpoczêcia sesji
-		bool findSuccess = false;
-		while (true) {
-			std::string received;
-			receive_text_protocol(received);
-			const TextProtocol recvProtocol(received);
-
-			if (recvProtocol.get_field() == FIELD_OPERATION && recvProtocol.operation == OP_ID_SESSION) {
-				sessionId = recvProtocol.sessionId;
-				std::string sessionIdInfo = "Identyfikator sesji: " + std::to_string(sessionId);
-				findSuccess = true;
-			}
-			if (recvProtocol.sequenceNumber == 0) { break; }
-		}
-
-		if (!findSuccess) { return false; }
-
-		return true;
-	}
-
-	//Wysy³anie ¿¹dania obliczenia (zale¿ne od podanej funkcji
+	//Wysy³anie ¿¹dania obliczenia (zale¿ne od podanej funkcji)
 	void calculation(void(*argInputFunc)(std::array<std::string, 2>&), const std::string& operation) {
 		//Podawanie argumentów
 		std::array<std::string, 2> args{ "","" };
@@ -263,10 +297,28 @@ private:
 		}
 
 		//Otrzymanie wiadomoœci zwrotnej
-		std::vector<TextProtocol>receivedParts = receive_messages();
+		std::vector<TextProtocol>receivedMessages;
+		byte failCount = 0;
+		while (true) {
+			std::string received;
+			if (receive_text_protocol(received)) {
+				if (received != "") {
+					const TextProtocol receivedProtocol(received);
+					if (receivedProtocol.operation != OP_ID_SESSION && receivedProtocol.status != STATUS_NOT_FOUND &&
+						receivedProtocol.status != STATUS_FORBIDDEN && receivedProtocol.status != STATUS_FOUND &&
+						receivedProtocol.status != STATUS_HISTORY_EMPTY) {
+						receivedMessages.push_back(receivedProtocol);
+						//Odbieranie koñczy siê przy natrafieniu na numer sekwencyjny 0
+						if (receivedProtocol.sequenceNumber == 0 && receivedProtocol.sessionId != 0) { break; }
+					}
+				}
+			}
+			else { failCount++; }
+			if (failCount == 10) { break; }
+		}
 
 		//Parsowanie komunikatów
-		for (const TextProtocol& prot : receivedParts) {
+		for (const TextProtocol& prot : receivedMessages) {
 			if (prot.sessionId == sessionId) {
 				if (prot.operation == OP_STATUS) {
 					sync_cout << " = ";
@@ -294,101 +346,123 @@ private:
 		bool isFactorial = false;
 
 		//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
-		if (sequence[0].sequenceNumber != 0) {
-			CONSOLE_MANIP::clear_console();
-			CONSOLE_MANIP::show_console_cursor(false);
-		}
+		if (!sequence.empty()) {
+			if (sequence[0].sequenceNumber != 0) {
+				CONSOLE_MANIP::clear_console();
+				CONSOLE_MANIP::show_console_cursor(false);
+			}
 
-		unsigned int equationNumber = 0;
-		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 3);
+			unsigned int equationNumber = 0;
+			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 3);
 
-		for (const TextProtocol& prot : sequence) {
-			if (prot.sessionId == sessionId) {
-				//Operacje
-				if (prot.get_field() == FIELD_OPERATION) {
-					//Obliczenia
-					if (prot.operation == OP_FACT) { calcSign = "!"; isFactorial = true; }
-					else if (prot.operation == OP_ADD) { calcSign = " + "; }
-					else if (prot.operation == OP_SUBT) { calcSign = " - "; }
-					else if (prot.operation == OP_MULTP) { calcSign = " * "; }
-					else if (prot.operation == OP_DIV) { calcSign = " / "; }
-				}
+			for (const TextProtocol& prot : sequence) {
+				if (prot.sessionId == sessionId) {
+					//Operacje
+					if (prot.get_field() == FIELD_OPERATION) {
+						//Obliczenia
+						if (prot.operation == OP_FACT) { calcSign = "!"; isFactorial = true; }
+						else if (prot.operation == OP_ADD) { calcSign = " + "; }
+						else if (prot.operation == OP_SUBT) { calcSign = " - "; }
+						else if (prot.operation == OP_MULTP) { calcSign = " * "; }
+						else if (prot.operation == OP_DIV) { calcSign = " / "; }
+					}
 
-				//Status
-				else if (prot.get_field() == FIELD_STATUS) {
-					if (prot.status == STATUS_OUT_OF_RANGE) {
-						sync_cout << " = wynik poza zakresem";
+					//Status
+					else if (prot.get_field() == FIELD_STATUS) {
+						if (prot.status == STATUS_OUT_OF_RANGE) {
+							sync_cout << " = wynik poza zakresem";
+							argNum = 1;
+						}
+						else if (prot.status == STATUS_FORBIDDEN) {
+							CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+							sync_cout << "Odmowa dostêpu!";
+							CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+						}
+						else if (prot.status == STATUS_HISTORY_EMPTY) {
+							CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+							sync_cout << "Historia pusta!";
+							CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+						}
+						else if (prot.status == STATUS_NOT_FOUND) {
+							CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+							sync_cout << "Nie znaleziono!";
+							CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+						}
+						else if (prot.status == STATUS_SUCCESS) { sync_cout << " = "; }
+						else if (prot.status == STATUS_FOUND) { continue; }
+					}
+
+					//Id obliczeñ
+					else if (prot.get_field() == FIELD_CALCULATION_ID) {
+						CONSOLE_MANIP::cursor_set_pos(boxWidth - 40, CONSOLE_MANIP::cursor_get_pos().Y);
+						sync_cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
+						equationNumber++;
+					}
+
+					//Argument 1
+					else if (prot.get_field() == FIELD_NUMBER && argNum == 1) {
+						std::string numberStr = std::to_string(prot.number);
+						double_remove_end_zero(numberStr);
+
+						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
+						sync_cout << numberStr << calcSign;
+						argNum++;
+						if (isFactorial) { argNum++; isFactorial = false; }
+					}
+					//Argument 2
+					else if (prot.get_field() == FIELD_NUMBER && argNum == 2) {
+						std::string numberStr = std::to_string(prot.number);
+						double_remove_end_zero(numberStr);
+						const double numberDouble = stod(numberStr);
+						sync_cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
+						argNum++;
+					}
+					//Wynik
+					else if (prot.get_field() == FIELD_NUMBER && argNum == 3) {
+						std::string numberStr = std::to_string(prot.number);
+						double_remove_end_zero(numberStr);
+						const double numberDouble = stod(numberStr);
+						sync_cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
 						argNum = 1;
 					}
-					else if (prot.status == STATUS_FORBIDDEN) {
-						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						sync_cout << "Odmowa dostêpu!";
-						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-					}
-					else if (prot.status == STATUS_HISTORY_EMPTY) {
-						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						sync_cout << "Historia pusta!";
-						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-					}
-					else if (prot.status == STATUS_NOT_FOUND) {
-						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						sync_cout << "Nie znaleziono!";
-						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-					}
-					else if (prot.status == STATUS_SUCCESS) { sync_cout << " = "; }
-					else if (prot.status == STATUS_FOUND) { continue; }
-				}
-
-				//Id obliczeñ
-				else if (prot.get_field() == FIELD_CALCULATION_ID) {
-					CONSOLE_MANIP::cursor_set_pos(boxWidth - 40, CONSOLE_MANIP::cursor_get_pos().Y);
-					sync_cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
-					equationNumber++;
-				}
-
-				//Argument 1
-				else if (prot.get_field() == FIELD_NUMBER && argNum == 1) {
-					std::string numberStr = std::to_string(prot.number);
-					double_remove_end_zero(numberStr);
-
-					CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-					sync_cout << numberStr << calcSign;
-					argNum++;
-					if (isFactorial) { argNum++; isFactorial = false; }
-				}
-				//Argument 2
-				else if (prot.get_field() == FIELD_NUMBER && argNum == 2) {
-					std::string numberStr = std::to_string(prot.number);
-					double_remove_end_zero(numberStr);
-					const double numberDouble = stod(numberStr);
-					sync_cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
-					argNum++;
-				}
-				//Wynik
-				else if (prot.get_field() == FIELD_NUMBER && argNum == 3) {
-					std::string numberStr = std::to_string(prot.number);
-					double_remove_end_zero(numberStr);
-					const double numberDouble = stod(numberStr);
-					sync_cout << (numberDouble >= 0 ? numberStr : "(" + numberStr + ')');
-					argNum = 1;
 				}
 			}
-		}
 
-		const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
-		CONSOLE_MANIP::print_text(2, 1, "Ca³a Twoja Historia");
-		CONSOLE_MANIP::print_box(0, 0, boxWidth, equationNumber + 4);
-		CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
-		CONSOLE_MANIP::cursor_set_pos(cursorPos);
+			if (sequence[0].sequenceNumber != 0) {
+				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
+				CONSOLE_MANIP::print_text(2, 1, "Ca³a Twoja Historia");
+				CONSOLE_MANIP::print_box(0, 0, boxWidth, equationNumber + 4);
+				CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
+				CONSOLE_MANIP::cursor_set_pos(cursorPos);
+			}
+		}
 	}
 
-	//Historia (dla sessionId sesji)
+	//Historia (dla identyfikatora sesji)
 	void history_by_session_id() {
 		TextProtocol histProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		histProtocol.operation = OP_HISTORY_WHOLE;
 		send_text_protocol(histProtocol, FIELD_OPERATION);
 
-		const std::vector<TextProtocol> history = receive_messages();
+		std::vector<TextProtocol> history;
+		byte failCount = 0;
+		while (true) {
+			std::string received;
+			if (receive_text_protocol(received)) {
+				if (received != "") {
+					const TextProtocol receivedProtocol(received);
+					if (receivedProtocol.operation != OP_ID_SESSION && receivedProtocol.status != STATUS_NOT_FOUND &&
+						receivedProtocol.status != STATUS_FORBIDDEN && receivedProtocol.status != STATUS_FOUND) {
+						history.push_back(receivedProtocol);
+						//Odbieranie koñczy siê przy natrafieniu na numer sekwencyjny 0
+						if (receivedProtocol.sequenceNumber == 0 && receivedProtocol.sessionId != 0) { break; }
+					}
+				}
+			}
+			else { failCount++; }
+			if (failCount == 10) { break; }
+		}
+
 
 		print_message_sequence_hist_whole(history);
 
@@ -488,7 +562,23 @@ private:
 		histProtocol.calculationId = std::stoi(calcId);
 		send_text_protocol(histProtocol, FIELD_CALCULATION_ID);
 
-		const std::vector<TextProtocol>history = receive_messages();
+		std::vector<TextProtocol>history;
+		byte failCount = 0;
+		while (true) {
+			std::string received;
+			if (receive_text_protocol(received)) {
+				if (received != "") {
+					const TextProtocol receivedProtocol(received);
+					if (receivedProtocol.operation != OP_ID_SESSION && receivedProtocol.status != STATUS_HISTORY_EMPTY) {
+						history.push_back(receivedProtocol);
+						//Odbieranie koñczy siê przy natrafieniu na numer sekwencyjny 0
+						if (receivedProtocol.sequenceNumber == 0 && receivedProtocol.sessionId != 0) { break; }
+					}
+				}
+			}
+			else { failCount++; }
+			if (failCount == 10) { break; }
+		}
 
 		print_message_sequence(history);
 
@@ -500,7 +590,7 @@ private:
 	void action_choice() {
 		sessionIdInfo = "Identyfikator sesji: " + std::to_string(sessionId);
 
-		unsigned int choice = 1;
+		byte choice = 1;
 		while (true) {
 			//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
 			CONSOLE_MANIP::clear_console();
@@ -535,7 +625,7 @@ private:
 	}
 
 	//Menu wybierania akcji
-	void action_choice_main_menu(unsigned int& choice) const {
+	void action_choice_main_menu(byte& choice) const {
 		const std::string actionChoice = "Wybór akcji:";
 		std::string disconnect = " Zakoñczenie sesji.";
 		std::string calculate = " Obliczenie.";
@@ -574,7 +664,7 @@ private:
 
 	//Menu akcji obliczeñ
 	void calculation_menu() {
-		int choiceCalc = 1;
+		byte choice = 1;
 		std::string goBackText = " Powrót.";
 		std::string additionText = " Dodanie dwóch liczb.";
 		std::string subtractionText = " Odjêcie dwóch liczb.";
@@ -597,12 +687,12 @@ private:
 				multiplicationText[0] = ' ';
 				divisionText[0] = ' ';
 				factorialText[0] = ' ';
-				if (choiceCalc == 1) { goBackText[0] = '>'; }
-				else if (choiceCalc == 2) { additionText[0] = '>'; }
-				else if (choiceCalc == 3) { subtractionText[0] = '>'; }
-				else if (choiceCalc == 4) { multiplicationText[0] = '>'; }
-				else if (choiceCalc == 5) { divisionText[0] = '>'; }
-				else if (choiceCalc == 6) { factorialText[0] = '>'; }
+				if (choice == 1) { goBackText[0] = '>'; }
+				else if (choice == 2) { additionText[0] = '>'; }
+				else if (choice == 3) { subtractionText[0] = '>'; }
+				else if (choice == 4) { multiplicationText[0] = '>'; }
+				else if (choice == 5) { divisionText[0] = '>'; }
+				else if (choice == 6) { factorialText[0] = '>'; }
 
 				//Wyœwietlanie opcji
 				CONSOLE_MANIP::print_text(2, 4, goBackText);
@@ -617,31 +707,31 @@ private:
 				CONSOLE_MANIP::clear_console_input_buffer();
 
 				//Sprawdzanie naciœniêtych klawiszy
-				if (CONSOLE_MANIP::check_arrow("UP") && choiceCalc > 1) { choiceCalc--; }
-				else if (CONSOLE_MANIP::check_arrow("DOWN") && choiceCalc < 6) { choiceCalc++; }
+				if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
+				else if (CONSOLE_MANIP::check_arrow("DOWN") && choice < 6) { choice++; }
 				else if (CONSOLE_MANIP::check_enter()) { break; }
 			}
 			//Przejœcie do wykonywania wybranego dzia³ania
 			//Powrót
-			if (choiceCalc == 1) { break; }
+			if (choice == 1) { break; }
 			//Dodawanie
-			else if (choiceCalc == 2) {
+			else if (choice == 2) {
 				calculation(&arg_input_two_add, OP_ADD);
 			}
 			//Odejmowanie
-			else if (choiceCalc == 3) {
+			else if (choice == 3) {
 				calculation(&arg_input_two_subt, OP_SUBT);
 			}
 			//Mno¿enie
-			else if (choiceCalc == 4) {
+			else if (choice == 4) {
 				calculation(&arg_input_two_multp, OP_MULTP);
 			}
 			//Dzielenie
-			else if (choiceCalc == 5) {
+			else if (choice == 5) {
 				calculation(&arg_input_two_div, OP_DIV);
 			}
 			//Silnia
-			else if (choiceCalc == 6) {
+			else if (choice == 6) {
 				calculation(&arg_input_one_uint_fact, OP_FACT);
 			}
 		}
@@ -649,7 +739,7 @@ private:
 
 	//Menu historii
 	void history_menu() {
-		int choiceCalc = 1;
+		byte choice = 1;
 		std::string goBackText = " Powrót.";
 		std::string wholeHistory = " Wyœwietl ca³¹ historiê.";
 		std::string byCalcId = " Wyœwietl obliczenie o podanym identyfikatorze.";
@@ -667,9 +757,9 @@ private:
 				goBackText[0] = ' ';
 				wholeHistory[0] = ' ';
 				byCalcId[0] = ' ';
-				if (choiceCalc == 1) { goBackText[0] = '>'; }
-				else if (choiceCalc == 2) { wholeHistory[0] = '>'; }
-				else if (choiceCalc == 3) { byCalcId[0] = '>'; }
+				if (choice == 1) { goBackText[0] = '>'; }
+				else if (choice == 2) { wholeHistory[0] = '>'; }
+				else if (choice == 3) { byCalcId[0] = '>'; }
 
 				//Wyœwietlanie opcji
 				CONSOLE_MANIP::print_text(2, 4, goBackText);
@@ -681,21 +771,21 @@ private:
 				CONSOLE_MANIP::clear_console_input_buffer();
 
 				//Sprawdzanie naciœniêtych klawiszy
-				if (CONSOLE_MANIP::check_arrow("UP") && choiceCalc > 1) { choiceCalc--; }
-				else if (CONSOLE_MANIP::check_arrow("DOWN") && choiceCalc < 3) { choiceCalc++; }
+				if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
+				else if (CONSOLE_MANIP::check_arrow("DOWN") && choice < 3) { choice++; }
 				else if (CONSOLE_MANIP::check_enter()) { break; }
 			}
 
 			//Przejœcie do wykonywania wybranej akcji
 
 			//Powrót
-			if (choiceCalc == 1) { break; }
+			if (choice == 1) { break; }
 			//Ca³a historia
-			else if (choiceCalc == 2) {
+			else if (choice == 2) {
 				history_by_session_id();
 			}
 			//Po identyfikatorze obliczeñ
-			else if (choiceCalc == 3) {
+			else if (choice == 3) {
 				history_by_calc_id();
 			}
 		}
@@ -704,21 +794,24 @@ private:
 public:
 	unsigned int sessionId = 0;
 
-	ClientUDP(const unsigned short& Port1) :NodeUDP(Port1) { messages = false; }
+	explicit ClientUDP(const unsigned short& Port1) :NodeUDP(Port1) {
+		messages = false;
+
+		const int iTimeout = 5000;
+		setsockopt(nodeSocket,
+			SOL_SOCKET,
+			SO_RCVTIMEO,
+			reinterpret_cast<const char *>(&iTimeout),
+			sizeof(iTimeout));
+	}
 
 	bool start_session() {
-		CONSOLE_MANIP::clear_console();
-		CONSOLE_MANIP::show_console_cursor(false);
-		bool textStop = false;
-		std::thread textThread(&ClientUDP::find_server_text, std::ref(textStop));
-
 		//Szukanie serwera
-		find_server();
-
-		textStop = true;
-		textThread.join();
+		if (!find_server()) { return false; }
 
 		action_choice();
+
+		if (otherAddr.sin_addr.s_addr == inet_addr("127.0.0.1")) { otherAddr.sin_port -= 1; }
 		return true;
 	}
 };

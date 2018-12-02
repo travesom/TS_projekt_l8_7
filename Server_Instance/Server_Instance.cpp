@@ -12,6 +12,8 @@ int main()
 
 	ServerUDP server(Port1);
 	while (true) {
-		server.start_session();
+		if(!server.start_session()){
+			std::cout << "\nSesja przerwana!\n";
+		}
 	}
 }

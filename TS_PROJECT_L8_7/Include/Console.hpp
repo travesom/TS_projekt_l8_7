@@ -6,6 +6,7 @@
 #include <conio.h>
 
 class CONSOLE_MANIP {
+	static std::mutex mutex;
 public:
 	static void cursor_set_pos(const COORD& c) noexcept {
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
@@ -58,7 +59,11 @@ public:
 
 			check_alt_f4();
 
-			if (c == 0x0d) { break; }
+			if (c == 0x0d) {
+				if (!str.empty()) {
+					break;
+				}
+			}
 			else if (c == 0x08) {	//Jeœli wprowadzono backspace
 				if (!str.empty()) {
 					cursor_move(-1, 0);
@@ -67,6 +72,7 @@ public:
 					str.pop_back();
 				}
 			}
+			else if (str.empty() && c == '0') { continue; }
 			else if (check_function(c)) { continue; }
 			else if (c >= '0' && c <= '9' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z') {
 				if (str.size() < limit) {
@@ -154,7 +160,12 @@ public:
 
 			check_alt_f4();
 
-			if (c == 0x0d) { break; }
+			if (c == 0x0d) {
+				if (!str.empty()) {
+					break;
+				}
+			}
+			else if (str.empty() && c == '0') { continue; }
 			else if (c == 0x08) {	//Jeœli wprowadzono backspace
 				if (!str.empty()) {
 					cursor_move(-1, 0);
@@ -164,7 +175,7 @@ public:
 				}
 			}
 			else if (str.empty() && c == '-') { cursor_move(1, 0); str += c; }
-			else if (check_other_than_num(c)) { /*continue*/ }
+			else if (check_other_than_num(c)) { continue; }
 			else if (c >= '0' && c <= '9') {
 				if (str.size() < limit) { cursor_move(1, 0); str += c; }
 				else if (!str.empty() && str[0] == '-' && str.size() == limit) {
@@ -198,7 +209,15 @@ public:
 
 			check_alt_f4();
 
-			if (c == 0x0d) { break; }
+			if (c == 0x0d) {
+				if (str.size() == 1 && str[0] == '-') {
+					cursor_move(-1, 0);
+					continue;
+				}
+				else { break; }
+			}
+			if (str.empty() && c == '0') { continue; }
+			else if (str.length() == 1 && str[0] == '-' && c == '0') { cursor_move(-1, 0); continue; }
 			else if (c == 0x08) {	//Jeœli wprowadzono backspace
 				if (!str.empty()) {
 					cursor_move(-1, 0);
@@ -208,7 +227,7 @@ public:
 				}
 			}
 			else if (str.empty() && c == '-') { cursor_move(1, 0); str += c; }
-			else if (check_other_than_num(c)) { /*continue*/ }
+			else if (check_other_than_num(c)) { continue; }
 			else if (c >= '0' && c <= '9') {
 				if (str.size() < limit) {
 					cursor_move(1, 0);
@@ -273,8 +292,10 @@ public:
 		sync_cout << text << variable;
 	}
 	static void print_text(const unsigned int &xPos, const unsigned int &yPos, const std::string &text1, const std::string &text2) {
+		mutex.lock();
 		cursor_set_pos(xPos, yPos);
 		sync_cout << text1 << text2;
+		mutex.unlock();
 	}
 
 	static void press_any_key_text(bool& stop) {
@@ -295,7 +316,7 @@ public:
 					dotsText = "";
 				}
 				else { dotsText += ". "; }
-				print_text(startCursorPosition.X, startCursorPosition.Y, searchingText + "                    ");
+				print_text(startCursorPosition.X, startCursorPosition.Y, searchingText + "          ");
 				print_text(startCursorPosition.X, startCursorPosition.Y, searchingText + dotsText);
 				timeStart = std::chrono::system_clock::now();
 			}
@@ -310,7 +331,8 @@ public:
 		bool textStop = false;
 		std::thread textThread(&CONSOLE_MANIP::press_any_key_text, std::ref(textStop));
 
-		do { clear_console_input_buffer(); } while (!check_space()); //Waits for SPACE press
+		clear_console_input_buffer();
+		_getch(); //Czekanie na naciœniêcie klawisza
 
 		clear_console_input_buffer();
 		textStop = true;

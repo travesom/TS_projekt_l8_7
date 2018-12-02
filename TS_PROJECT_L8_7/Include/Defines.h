@@ -21,6 +21,7 @@
 
 //Operacje
 #define OP_BEGIN  std::string("ROZPOCZECIE")
+#define OP_ACK    std::string("POTWIERDZENIE")
 #define OP_END    std::string("ZAKONCZENIE")
 
 #define OP_ADD   std::string("DODAWANIE")

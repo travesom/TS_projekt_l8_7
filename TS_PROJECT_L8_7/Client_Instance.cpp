@@ -3,12 +3,11 @@
 
 #include "Client.h"
 
-const std::string question = "Czy chcesz rozpocząć ponownie sesję?";
-std::string no = " Nie";
-std::string yes = " Tak";
+int main() {
+	std::string question;
+	std::string no = " Nie";
+	std::string yes = " Tak";
 
-int main()
-{
 	Sleep(1000); //Na końcu usunąć
 	system("chcp 1250");
 
@@ -23,13 +22,9 @@ int main()
 	CONSOLE_MANIP::clear_console();
 	while (true) {
 		CONSOLE_MANIP::cursor_set_pos(1, 1);
-		if (!client.start_session()) {
-			sync_cout << "Błąd sesji.";
-			CONSOLE_MANIP::cursor_move(0, 1);
-			CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y);
-		}
+		if (!client.start_session()) { question = "Czy chcesz ponownie spróbować rozpocząć sesję?"; }
+		else { question = "Czy chcesz wznowić sesję?"; }
 
-		CONSOLE_MANIP::cursor_move(0, 1);
 		CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y);
 
 		bool choice = false;
@@ -51,8 +46,6 @@ int main()
 
 		//Pętla wyboru (strzałkami)
 		while (true) {
-
-
 			//DODAWANIE wskaźnika wybranej opcji
 			if (choice) {
 				no[0] = ' ';
@@ -78,8 +71,7 @@ int main()
 		if (choice == false) { break; }
 	}
 
-	//---------------------------------------------
-	// Clean up and quit.
+	//Kończenie
 	WSACleanup();
 	CONSOLE_MANIP::cursor_set_pos(boxWidth / 2 - question.length() / 2, boxHeight / 2);
 	CONSOLE_MANIP::press_any_key_pause();

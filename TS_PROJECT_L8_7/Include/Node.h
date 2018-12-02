@@ -2,8 +2,9 @@
 #include "Protocol.h"
 #include "Console.hpp"
 #include <winsock2.h>
-#include <iostream>
+#include <Ws2tcpip.h>
 #include <Iphlpapi.h>
+#include <iostream>
 #include <set>
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -93,7 +94,7 @@ protected:
 		//Tworzenie gniazdka do wysy³ania
 		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (nodeSocket == INVALID_SOCKET) {
-			if (messages) { std::cout << "socket niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
+			if (messages) { std::cout << "Tworzenie gniazdka niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
 			WSACleanup();
 			return;
 		}
@@ -112,12 +113,7 @@ public:
 
 		//Wpisywanie dla pewnoœci NULL do tablicy znaków
 		std::fill(std::begin(recvBuffer), std::end(recvBuffer), NULL);
-
-		int iResult = SOCKET_ERROR;
-		for (int i = 10; i > 0; i--) {
-			iResult = recvfrom(nodeSocket, recvBuffer, sizeof(recvBuffer), 0, reinterpret_cast<SOCKADDR *>(&otherAddr), &sendAddrLength);
-			if (iResult != SOCKET_ERROR) { break; }
-		}
+		const int iResult = recvfrom(nodeSocket, recvBuffer, sizeof(recvBuffer), 0, reinterpret_cast<SOCKADDR *>(&otherAddr), &sendAddrLength);
 		if (iResult == SOCKET_ERROR) {
 			if (messages) { std::cout << "Odbieranie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
 			return false;
@@ -125,7 +121,7 @@ public:
 
 		//Przepisywanie zawartoœci bufora do string'a
 		std::string result;
-		for (unsigned int i = 0; i < 1024; i++) {
+		for (uint16_t i = 0; i < 1024; i++) {
 			//NULL oznacza koniec stringa
 			if (recvBuffer[i] != NULL) {
 				result.push_back(recvBuffer[i]);
@@ -148,14 +144,12 @@ public:
 		const int iResult = sendto(nodeSocket, sendStr.c_str(), sendStr.length(), 0, reinterpret_cast<SOCKADDR *>(&otherAddr), sizeof(otherAddr));
 		if (iResult == SOCKET_ERROR) {
 			if (messages) { std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
-			closesocket(nodeSocket);
-			WSACleanup();
 			return false;
 		}
 		return true;
 	}
 
-	void send_text_protocol_to(const TextProtocol& protocol, const int& field, const std::string& address) {
+	void send_text_protocol_to(const TextProtocol& protocol, const int& field, const std::string& address) const {
 		sockaddr_in addr{};
 
 		//Adres drugiego wêz³a
@@ -179,14 +173,22 @@ public:
 		std::vector<TextProtocol> receivedMessages;
 
 		//Pêtla odbierania danych
+		byte failCount = 0;
 		while (true) {
 			std::string received;
-			receive_text_protocol(received);
-			const TextProtocol receivedProtocol(received);
-			receivedMessages.push_back(receivedProtocol);
+			if (receive_text_protocol(received)) {
+				if (received != "") {
+					const TextProtocol receivedProtocol(received);
+					if (receivedProtocol.operation != OP_ID_SESSION) {
+						receivedMessages.push_back(receivedProtocol);
 
-			//Odbieranie koñczy siê przy natrafieniu na numer sekwencyjny 0
-			if (receivedProtocol.sequenceNumber == 0) { break; }
+						//Odbieranie koñczy siê przy natrafieniu na numer sekwencyjny 0
+						if (receivedProtocol.sequenceNumber == 0 && receivedProtocol.sessionId != 0) { break; }
+					}
+				}
+			}
+			else { failCount++; }
+			if (failCount == 10) { break; }
 		}
 		return receivedMessages;
 	}
