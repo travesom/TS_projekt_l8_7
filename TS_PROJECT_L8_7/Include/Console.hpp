@@ -1,12 +1,12 @@
 #pragma once
 #define _WINSOCKAPI_
+
 #include "ThreadSafe.hpp"
 #include <Windows.h>
 #include <string>
 #include <conio.h>
 
 class CONSOLE_MANIP {
-	static std::mutex mutex;
 public:
 	static void cursor_set_pos(const COORD& c) noexcept {
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
@@ -59,11 +59,7 @@ public:
 
 			check_alt_f4();
 
-			if (c == 0x0d) {
-				if (!str.empty()) {
-					break;
-				}
-			}
+			if (c == 0x0d) { if (!str.empty()) { break; } }
 			else if (c == 0x08) {	//Jeœli wprowadzono backspace
 				if (!str.empty()) {
 					cursor_move(-1, 0);
@@ -72,8 +68,8 @@ public:
 					str.pop_back();
 				}
 			}
-			else if (str.empty() && c == '0') { continue; }
-			else if (check_function(c)) { continue; }
+			else if (!str.empty()) { if (str.size() == 1 && str[0] == '0' && c == '0') { continue; } }
+			if (check_function(c)) { continue; }
 			else if (c >= '0' && c <= '9' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z') {
 				if (str.size() < limit) {
 					cursor_move(1, 0);
@@ -160,13 +156,13 @@ public:
 
 			check_alt_f4();
 
-			if (c == 0x0d) {
-				if (!str.empty()) {
-					break;
+			if (c == 0x0d) { if (!str.empty()) { break; } }
+			if (!str.empty()) {
+				if (str.size() == 1 && str[0] == '0' && c == '0') {
+					continue;
 				}
 			}
-			else if (str.empty() && c == '0') { continue; }
-			else if (c == 0x08) {	//Jeœli wprowadzono backspace
+			if (c == 0x08) {	//Jeœli wprowadzono backspace
 				if (!str.empty()) {
 					cursor_move(-1, 0);
 					sync_cout << ' ';
@@ -214,10 +210,12 @@ public:
 					cursor_move(-1, 0);
 					continue;
 				}
-				else { break; }
+				else if (!str.empty()) { break; }
 			}
-			if (str.empty() && c == '0') { continue; }
-			else if (str.length() == 1 && str[0] == '-' && c == '0') { cursor_move(-1, 0); continue; }
+			if (!str.empty()) {
+				if (str.size() == 1 && str[0] == '0' && c == '0') { continue; }
+			}
+			if (str.length() == 1 && str[0] == '-' && c == '0') { cursor_move(-1, 0); continue; }
 			else if (c == 0x08) {	//Jeœli wprowadzono backspace
 				if (!str.empty()) {
 					cursor_move(-1, 0);
@@ -259,7 +257,6 @@ public:
 		coordinates2.Y = yPos;
 
 		for (unsigned int i = 0; i <= height + 1; i++) {
-
 			cursor_set_pos(coordinates1);
 			sync_cout << "|";
 			coordinates1.Y += 1;
@@ -292,10 +289,8 @@ public:
 		sync_cout << text << variable;
 	}
 	static void print_text(const unsigned int &xPos, const unsigned int &yPos, const std::string &text1, const std::string &text2) {
-		mutex.lock();
 		cursor_set_pos(xPos, yPos);
 		sync_cout << text1 << text2;
-		mutex.unlock();
 	}
 
 	static void press_any_key_text(bool& stop) {

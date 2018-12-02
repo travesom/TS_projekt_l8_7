@@ -122,11 +122,11 @@ private:
 			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
 			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
 			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
+				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
+				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                     ");
+				CONSOLE_MANIP::cursor_set_pos(cursorPos);
 				if (argNum == 1) { break; }
 				argNum++;
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				sync_cout << "                     ";
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
@@ -146,11 +146,11 @@ private:
 			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
 			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
 			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
+				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
+				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                     ");
+				CONSOLE_MANIP::cursor_set_pos(cursorPos);
 				if (argNum == 1) { break; }
 				argNum++;
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				sync_cout << "                     ";
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
@@ -170,11 +170,11 @@ private:
 			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
 			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
 			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
+				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
+				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                     ");
+				CONSOLE_MANIP::cursor_set_pos(cursorPos);
 				if (argNum == 1) { break; }
 				argNum++;
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				sync_cout << "                     ";
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
@@ -201,11 +201,11 @@ private:
 				continue;
 			}
 			else if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
+				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
+				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                     ");
+				CONSOLE_MANIP::cursor_set_pos(cursorPos);
 				if (argNum == 1) { break; }
 				argNum++;
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				sync_cout << "                     ";
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
 			}
 			else {
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
@@ -395,7 +395,7 @@ private:
 					//Id obliczeñ
 					else if (prot.get_field() == FIELD_CALCULATION_ID) {
 						CONSOLE_MANIP::cursor_set_pos(boxWidth - 40, CONSOLE_MANIP::cursor_get_pos().Y);
-						sync_cout << " | Identyfikator obliczenia: " << prot.calculationId << '\n';
+						CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y, "Identyfikator obliczenia: " + std::to_string(prot.calculationId) + "\n");
 						equationNumber++;
 					}
 
@@ -404,8 +404,7 @@ private:
 						std::string numberStr = std::to_string(prot.number);
 						double_remove_end_zero(numberStr);
 
-						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-						sync_cout << numberStr << calcSign;
+						CONSOLE_MANIP::print_text(40, CONSOLE_MANIP::cursor_get_pos().Y, "| " + numberStr + calcSign);
 						argNum++;
 						if (isFactorial) { argNum++; isFactorial = false; }
 					}
@@ -679,6 +678,7 @@ private:
 			CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
 			CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
 			CONSOLE_MANIP::print_text(2, 2, actionChoice);
+
 			while (true) {
 				//DODAWANIE wskaŸnika wybranej opcji
 				goBackText[0] = ' ';
@@ -707,11 +707,14 @@ private:
 				CONSOLE_MANIP::clear_console_input_buffer();
 
 				//Sprawdzanie naciœniêtych klawiszy
-				if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
+				if (CONSOLE_MANIP::check_escape()) { choice = 1; break; }
+				else if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
 				else if (CONSOLE_MANIP::check_arrow("DOWN") && choice < 6) { choice++; }
 				else if (CONSOLE_MANIP::check_enter()) { break; }
 			}
+
 			//Przejœcie do wykonywania wybranego dzia³ania
+
 			//Powrót
 			if (choice == 1) { break; }
 			//Dodawanie
@@ -771,7 +774,8 @@ private:
 				CONSOLE_MANIP::clear_console_input_buffer();
 
 				//Sprawdzanie naciœniêtych klawiszy
-				if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
+				if (CONSOLE_MANIP::check_escape()) { choice = 1; break; }
+				else if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
 				else if (CONSOLE_MANIP::check_arrow("DOWN") && choice < 3) { choice++; }
 				else if (CONSOLE_MANIP::check_enter()) { break; }
 			}
