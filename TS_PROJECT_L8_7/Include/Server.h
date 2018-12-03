@@ -81,6 +81,7 @@ private:
 
 		std::cout << "\nNas³uchiwanie na klientów.\n";
 		byte failCount = 0;
+listening:
 		while (true) {
 			if (receive_text_protocol(received)) {
 				std::cout << "Odbieranie (nas³uchiwanie): " << received << '\n';
@@ -122,22 +123,34 @@ private:
 			//Odbieranie potwierdzenia od klienta
 			failCount = 0;
 			while (receivedProt.operation != OP_ACK) {
-				if (receive_text_protocol(received)) {
-					std::cout << "Odbieranie (potwierdzenie): " << received << '\n';
-					receivedProt = TextProtocol(received);
-					if (receivedProt.get_field() == FIELD_OPERATION) {
-						if (receivedProt.operation == OP_ACK) {
-							std::cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
-							return true;
+				if (receivedProt.operation != OP_BEGIN) {
+					if (receive_text_protocol(received)) {
+						std::cout << "Odbieranie (potwierdzenie): " << received << '\n';
+						receivedProt = TextProtocol(received);
+						if (receivedProt.get_field() == FIELD_OPERATION) {
+							if (receivedProt.operation == OP_ACK) {
+								std::cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
+								return true;
+							}
 						}
 					}
+					else { failCount++; }
+					if (failCount == 11) { break; }
+					else {
+						//Retransmisja identyfikatora sesji
+						send_text_protocol(idProtocol, FIELD_OPERATION);
+						std::cout << "Wysy³anie (id): " << idProtocol.to_string(idProtocol.get_field()) << '\n';
+					}
 				}
-				else { failCount++; }
-				if (failCount == 11) { break; }
-				else {
-					//Retransmisja identyfikatora sesji
-					send_text_protocol(idProtocol, FIELD_OPERATION);
-					std::cout << "Wysy³anie (id): " << idProtocol.to_string(idProtocol.get_field()) << '\n';
+				else{
+					closesocket(nodeSocket);
+					nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+					serverAddr.sin_addr.s_addr = INADDR_ANY;
+					serverAddr.sin_port = port;
+					std::cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
+					Sleep(100);
+					bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
+					goto listening;
 				}
 			}
 		}
