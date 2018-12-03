@@ -121,7 +121,7 @@ public:
 
 		//Przepisywanie zawartoœci bufora do string'a
 		std::string result;
-		for (uint16_t i = 0; i < 1024; i++) {
+		for (unsigned short int i = 0; i < 1024; i++) {
 			//NULL oznacza koniec stringa
 			if (recvBuffer[i] != NULL) {
 				result.push_back(recvBuffer[i]);

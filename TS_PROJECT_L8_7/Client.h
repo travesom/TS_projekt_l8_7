@@ -42,6 +42,8 @@ private:
 	bool find_server() {
 		CONSOLE_MANIP::clear_console();
 		CONSOLE_MANIP::show_console_cursor(false);
+
+		//W³¹czenie w¹tku do wyœwietlania animacji szuaknie serwera
 		bool textStop = false;
 		std::thread textThread(&ClientUDP::find_server_text, std::ref(textStop));
 
@@ -101,6 +103,7 @@ private:
 			send_text_protocol(ackProtocol, ackProtocol.get_field());
 		}
 
+		//Zatrzymanie w¹tku do wyœwietlania animacji szuaknie serwera
 		textStop = true;
 		textThread.join();
 		if (!findSuccess) { return false; }
@@ -195,9 +198,9 @@ private:
 			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
 
 			if (argNum == 1 && stod(args[argNum]) == 0) {
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-				sync_cout << "Dzielnik nie mo¿e byæ zerem!";
-				CONSOLE_MANIP::cursor_set_pos(1, CONSOLE_MANIP::cursor_get_pos().Y - 2);
+				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
+				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "Dzielnik nie mo¿e byæ zerem!");
+				CONSOLE_MANIP::cursor_set_pos(cursorPos);
 				continue;
 			}
 			else if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
