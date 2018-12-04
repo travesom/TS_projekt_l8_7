@@ -88,6 +88,10 @@ listening:
 				receivedProt = TextProtocol(received);
 
 				if (receivedProt.operation == OP_BEGIN) {/*nic*/ }
+				else if (receivedProt.operation == OP_ACK){
+					std::cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
+					return true;
+				}
 
 				//Jeœli odebrano komunikat z adresem serwera
 				if (receivedProt.get_field() == FIELD_ADDRESS) {
