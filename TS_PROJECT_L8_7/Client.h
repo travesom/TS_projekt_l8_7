@@ -160,7 +160,7 @@ private:
 			}
 			else if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
 				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
-				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                         ");
+				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                              ");
 				CONSOLE_MANIP::cursor_set_pos(cursorPos);
 				if (argNum == 1) { break; }
 				argNum++;
