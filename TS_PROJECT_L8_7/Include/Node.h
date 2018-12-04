@@ -4,12 +4,12 @@
 #include <winsock2.h>
 #include <Ws2tcpip.h>
 #include <Iphlpapi.h>
-#include <iostream>
 #include <set>
 
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Iphlpapi.lib")
 
+static const unsigned short PORT_TO_SET = 27272;
 
 //Zwraca tablicê adresów IP z tablicy ARP, gdzie adresy podzielone s¹ na 4 czêœci
 inline std::vector<std::vector<std::string>> GET_IP_TABLE_FRAGM() {
@@ -83,18 +83,18 @@ protected:
 	sockaddr_in otherAddr{};
 
 	//Konstruktor
-	NodeUDP(const unsigned short& Port1) {
+	explicit NodeUDP(const unsigned short& Port1) {
 		//Inicjalizacja WinSock
 		const int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 		if (iResult != NO_ERROR) {
-			if (messages) { std::cout << "WSAStartup failed with error " << iResult << "\n"; }
+			if (messages) { sync_cout << "WSAStartup failed with error " << iResult << "\n"; }
 			return;
 		}
 
 		//Tworzenie gniazdka do wysy³ania
 		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (nodeSocket == INVALID_SOCKET) {
-			if (messages) { std::cout << "Tworzenie gniazdka niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
+			if (messages) { sync_cout << "Tworzenie gniazdka niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
 			WSACleanup();
 			return;
 		}
@@ -106,7 +106,9 @@ protected:
 	}
 	~NodeUDP() { WSACleanup(); }
 
+
 public:
+	//Funkcja odbierania komunikatu
 	bool receive_text_protocol(std::string& received) {
 		char recvBuffer[1024];
 		int sendAddrLength = sizeof(otherAddr);
@@ -115,7 +117,7 @@ public:
 		std::fill(std::begin(recvBuffer), std::end(recvBuffer), NULL);
 		const int iResult = recvfrom(nodeSocket, recvBuffer, sizeof(recvBuffer), 0, reinterpret_cast<SOCKADDR *>(&otherAddr), &sendAddrLength);
 		if (iResult == SOCKET_ERROR) {
-			if (messages) { std::cout << "Odbieranie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
+			if (messages) { sync_cout << "Odbieranie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
 			return false;
 		}
 
@@ -137,18 +139,20 @@ public:
 		return true;
 	}
 
+	//Funkcja wysy³ania komunikatu
 	bool send_text_protocol(const TextProtocol& protocol, const int& field) {
 		//Dane do wys³ania
 		const std::string sendStr = protocol.to_string(field);
 
 		const int iResult = sendto(nodeSocket, sendStr.c_str(), sendStr.length(), 0, reinterpret_cast<SOCKADDR *>(&otherAddr), sizeof(otherAddr));
 		if (iResult == SOCKET_ERROR) {
-			if (messages) { std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
+			if (messages) { sync_cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
 			return false;
 		}
 		return true;
 	}
 
+	//FUnkcja wysy³ania komunikatu pod dany adres
 	void send_text_protocol_to(const TextProtocol& protocol, const int& field, const std::string& address) const {
 		sockaddr_in addr{};
 
@@ -163,11 +167,11 @@ public:
 		const int iResult = sendto(nodeSocket, sendStr.c_str(), sendStr.length(), 0, reinterpret_cast<SOCKADDR *>(&addr), sizeof(addr));
 
 		if (iResult == SOCKET_ERROR) {
-			if (messages) { std::cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
+			if (messages) { sync_cout << "Wysy³anie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n"; }
 		}
 	}
 
-	//Zwraca wektor z wszystkimi komunikatami od operacji
+	//Funkcja odbierania sekwencji komunikatów
 	std::vector<TextProtocol> receive_messages() {
 		//Kontener na otrzymanie komunikaty
 		std::vector<TextProtocol> receivedMessages;
@@ -191,14 +195,5 @@ public:
 			if (failCount == 10) { break; }
 		}
 		return receivedMessages;
-	}
-
-	bool close_socket() const {
-		const int iResult = closesocket(nodeSocket);
-		if (iResult == SOCKET_ERROR) {
-			std::cout << "Zamykanie gniazdka niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
-			return false;
-		}
-		return true;
 	}
 };

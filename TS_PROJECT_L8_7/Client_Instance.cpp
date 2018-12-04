@@ -8,12 +8,9 @@ int main() {
 	std::string no = " Nie";
 	std::string yes = " Tak";
 
-	Sleep(1000); //Na końcu usunąć
 	system("chcp 1250");
 
-	const unsigned short Port1 = 27272;
-
-	ClientUDP client(Port1);
+	ClientUDP client(PORT_TO_SET);
 
 	//Pętla nawiązywania sesji
 	const unsigned int boxWidth = 80;

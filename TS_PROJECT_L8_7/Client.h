@@ -112,92 +112,47 @@ private:
 	}
 
 
+public:
+	unsigned int sessionId = 0;
 
+	//Konstruktor
+	explicit ClientUDP(const unsigned short& Port1) :NodeUDP(Port1) {
+		messages = false;
+
+		const int iTimeout = 5000;
+		setsockopt(nodeSocket,
+			SOL_SOCKET,
+			SO_RCVTIMEO,
+			reinterpret_cast<const char *>(&iTimeout),
+			sizeof(iTimeout));
+	}
+
+	//Funkcja rozpoczynaj¹ca sesjê
+	bool start_session() {
+		//Szukanie serwera
+		if (!find_server()) { return false; }
+
+		session_main_menu();
+
+		if (otherAddr.sin_addr.s_addr == inet_addr("127.0.0.1")) { otherAddr.sin_port -= 1; }
+		return true;
+	}
+
+
+private:
 	//Funkcje wprowadzania danych ----------------------------------------------------------
 
 	//Wpisywanie 2 argumentów (u¿yte dla dodawania, odejmowania i mno¿enia)
-	static void arg_input_two_add(std::array<std::string, 2>& args) {
+	static void arg_input_two_int(std::array<std::string, 2>& args, const std::string& calcSign) {
 		unsigned int argNum = 0;
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 		while (true) {
 			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " + " + args[1] : "");
-			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
-			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
-			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
-				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
-				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                     ");
-				CONSOLE_MANIP::cursor_set_pos(cursorPos);
-				if (argNum == 1) { break; }
-				argNum++;
-			}
-			else {
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				sync_cout << "Liczba poza zakresem!";
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
-			}
-		}
-	}
-
-	//Wpisywanie 2 argumentów (u¿yte dla dodawania, odejmowania i mno¿enia)
-	static void arg_input_two_subt(std::array<std::string, 2>& args) {
-		unsigned int argNum = 0;
-		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-		while (true) {
-			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " - " + args[1] : "");
-			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
-			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
-			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
-				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
-				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                     ");
-				CONSOLE_MANIP::cursor_set_pos(cursorPos);
-				if (argNum == 1) { break; }
-				argNum++;
-			}
-			else {
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				sync_cout << "Liczba poza zakresem!";
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
-			}
-		}
-	}
-
-	//Wpisywanie 2 argumentów (u¿yte dla dodawania, odejmowania i mno¿enia)
-	static void arg_input_two_multp(std::array<std::string, 2>& args) {
-		unsigned int argNum = 0;
-		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-		while (true) {
-			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " * " + args[1] : "");
-			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
-			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
-			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
-				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
-				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                     ");
-				CONSOLE_MANIP::cursor_set_pos(cursorPos);
-				if (argNum == 1) { break; }
-				argNum++;
-			}
-			else {
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				sync_cout << "Liczba poza zakresem!";
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
-			}
-		}
-	}
-
-	//Wpisywanie 2 argumentów dla dzielenia
-	static void arg_input_two_div(std::array<std::string, 2>& args) {
-		unsigned int argNum = 0;
-		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-		while (true) {
-			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " / " + args[1] : "");
+			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? calcSign + args[1] : "");
 			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
 			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
 
-			if (argNum == 1 && stod(args[argNum]) == 0) {
+			if (argNum == 1 && stod(args[argNum]) == 0 && calcSign.find('/') != std::string::npos) {
 				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
 				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "Dzielnik nie mo¿e byæ zerem!");
 				CONSOLE_MANIP::cursor_set_pos(cursorPos);
@@ -205,7 +160,7 @@ private:
 			}
 			else if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
 				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
-				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                     ");
+				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                         ");
 				CONSOLE_MANIP::cursor_set_pos(cursorPos);
 				if (argNum == 1) { break; }
 				argNum++;
@@ -219,7 +174,7 @@ private:
 	}
 
 	//Wpisywanie argumentu dla silni
-	static void arg_input_one_uint_fact(std::array<std::string, 2>& args) {
+	static void arg_input_one_uint_fact(std::array<std::string, 2>& args, const std::string& calcSign) {
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 		while (true) {
 			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
@@ -265,16 +220,220 @@ private:
 		}
 	}
 
+
+
+	//Funkcje menu -------------------------------------------------------------------------
+
+	//Funkcja wywo³uj¹ca wybieranie akcji i wykonuj¹ca wybór
+	void session_main_menu() {
+		sessionIdInfo = "Identyfikator sesji: " + std::to_string(sessionId);
+
+		byte choice = 1;
+		while (true) {
+			//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
+			CONSOLE_MANIP::clear_console();
+			CONSOLE_MANIP::show_console_cursor(false);
+			CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
+			CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
+			CONSOLE_MANIP::print_text(2, 2, actionChoice);
+
+			//G³ówne menu wyboru akcji
+			session_main_menu_controls(choice);
+
+			//Zakoñczenie sesji
+			if (choice == 1) {
+				TextProtocol protocol(GET_CURRENT_TIME(), sessionId, 0);
+				protocol.operation = OP_END;
+				if (!send_text_protocol(protocol, FIELD_OPERATION)) {
+					sync_cout << "B³¹d wysy³ania.\n";
+				}
+				return;
+			}
+
+			//Obliczenia
+			else if (choice == 2) {
+				calculation_menu();
+			}
+
+			//Historia
+			else if (choice == 3) {
+				history_menu();
+			}
+		}
+	}
+
+	//Menu wybierania akcji
+	static void session_main_menu_controls(byte& choice) {
+		const std::string actionChoice = "Wybór akcji:";
+		std::string disconnect = " Zakoñczenie sesji.";
+		std::string calculate = " Obliczenie.";
+		std::string history = " Historia.";
+
+		while (true) {
+			//DODAWANIE wskaŸnika wybranej opcji
+			disconnect[0] = ' ';
+			calculate[0] = ' ';
+			history[0] = ' ';
+			if (choice == 1) {
+				disconnect[0] = '>';
+			}
+			else if (choice == 2) {
+				calculate[0] = '>';
+			}
+			else if (choice == 3) {
+				history[0] = '>';
+			}
+
+			//Wyœwietlanie opcji
+			CONSOLE_MANIP::print_text(2, 4, disconnect);
+			CONSOLE_MANIP::print_text(2, 5, calculate);
+			CONSOLE_MANIP::print_text(2, 6, history);
+
+			//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
+			// jego akcja nie zosta³a wielokrotnie wykonana
+			CONSOLE_MANIP::clear_console_input_buffer();
+
+			//Sprawdzanie naciœniêtych klawiszy
+			if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
+			else if (CONSOLE_MANIP::check_arrow("DOWN") && choice < 3) { choice++; }
+			else if (CONSOLE_MANIP::check_enter()) { break; }
+		}
+	}
+
+	//Menu akcji obliczeñ
+	void calculation_menu() {
+		byte choice = 1;
+		std::string goBackText = " Powrót.";
+		std::string additionText = " Dodanie dwóch liczb.";
+		std::string subtractionText = " Odjêcie dwóch liczb.";
+		std::string multiplicationText = " Mno¿enie dwóch liczb.";
+		std::string divisionText = " Dzielenie dwóch liczb.";
+		std::string factorialText = " Silnia z liczby.";
+
+		while (true) {
+			//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
+			CONSOLE_MANIP::clear_console();
+			CONSOLE_MANIP::show_console_cursor(false);
+			CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
+			CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
+			CONSOLE_MANIP::print_text(2, 2, actionChoice);
+
+			while (true) {
+				//DODAWANIE wskaŸnika wybranej opcji
+				goBackText[0] = ' ';
+				additionText[0] = ' ';
+				subtractionText[0] = ' ';
+				multiplicationText[0] = ' ';
+				divisionText[0] = ' ';
+				factorialText[0] = ' ';
+				if (choice == 1) { goBackText[0] = '>'; }
+				else if (choice == 2) { additionText[0] = '>'; }
+				else if (choice == 3) { subtractionText[0] = '>'; }
+				else if (choice == 4) { multiplicationText[0] = '>'; }
+				else if (choice == 5) { divisionText[0] = '>'; }
+				else if (choice == 6) { factorialText[0] = '>'; }
+
+				//Wyœwietlanie opcji
+				CONSOLE_MANIP::print_text(2, 4, goBackText);
+				CONSOLE_MANIP::print_text(2, 5, additionText);
+				CONSOLE_MANIP::print_text(2, 6, subtractionText);
+				CONSOLE_MANIP::print_text(2, 7, multiplicationText);
+				CONSOLE_MANIP::print_text(2, 8, divisionText);
+				CONSOLE_MANIP::print_text(2, 9, factorialText);
+
+				//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
+				//jego akcja nie zosta³a wielokrotnie wykonana
+				CONSOLE_MANIP::clear_console_input_buffer();
+
+				//Sprawdzanie naciœniêtych klawiszy
+				if (CONSOLE_MANIP::check_escape()) { choice = 1; break; }
+				else if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
+				else if (CONSOLE_MANIP::check_arrow("DOWN") && choice < 6) { choice++; }
+				else if (CONSOLE_MANIP::check_enter()) { break; }
+			}
+
+			//Przejœcie do wykonywania wybranego dzia³ania
+
+			//Powrót
+			if (choice == 1) { break; }
+			//Dodawanie
+			else if (choice == 2) { calculation(&arg_input_two_int, OP_ADD, " + "); }
+			//Odejmowanie
+			else if (choice == 3) { calculation(&arg_input_two_int, OP_SUBT, " - "); }
+			//Mno¿enie
+			else if (choice == 4) { calculation(&arg_input_two_int, OP_MULTP, " * "); }
+			//Dzielenie
+			else if (choice == 5) { calculation(&arg_input_two_int, OP_DIV, " / "); }
+			//Silnia
+			else if (choice == 6) { calculation(&arg_input_one_uint_fact, OP_FACT, "! "); }
+		}
+	}
+
+	//Menu historii
+	void history_menu() {
+		byte choice = 1;
+		std::string goBackText = " Powrót.";
+		std::string wholeHistory = " Wyœwietl ca³¹ historiê.";
+		std::string byCalcId = " Wyœwietl obliczenie o podanym identyfikatorze.";
+
+		while (true) {
+			//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
+			CONSOLE_MANIP::clear_console();
+			CONSOLE_MANIP::show_console_cursor(false);
+			CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
+			CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
+			CONSOLE_MANIP::print_text(2, 2, actionChoice);
+
+			while (true) {
+				//DODAWANIE wskaŸnika wybranej opcji
+				goBackText[0] = ' ';
+				wholeHistory[0] = ' ';
+				byCalcId[0] = ' ';
+				if (choice == 1) { goBackText[0] = '>'; }
+				else if (choice == 2) { wholeHistory[0] = '>'; }
+				else if (choice == 3) { byCalcId[0] = '>'; }
+
+				//Wyœwietlanie opcji
+				CONSOLE_MANIP::print_text(2, 4, goBackText);
+				CONSOLE_MANIP::print_text(2, 5, wholeHistory);
+				CONSOLE_MANIP::print_text(2, 6, byCalcId);
+
+				//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
+				// jego akcja nie zosta³a wielokrotnie wykonana
+				CONSOLE_MANIP::clear_console_input_buffer();
+
+				//Sprawdzanie naciœniêtych klawiszy
+				if (CONSOLE_MANIP::check_escape()) { choice = 1; break; }
+				else if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
+				else if (CONSOLE_MANIP::check_arrow("DOWN") && choice < 3) { choice++; }
+				else if (CONSOLE_MANIP::check_enter()) { break; }
+			}
+
+			//Przejœcie do wykonywania wybranej akcji
+
+			//Powrót
+			if (choice == 1) { break; }
+			//Ca³a historia
+			else if (choice == 2) {
+				history_by_session_id();
+			}
+			//Po identyfikatorze obliczeñ
+			else if (choice == 3) {
+				history_by_calc_id();
+			}
+		}
+	}
+
 	//--------------------------------------------------------------------------------------
 
 
 
-	//Wysy³anie ¿¹dania obliczenia (zale¿ne od podanej funkcji)
-	void calculation(void(*argInputFunc)(std::array<std::string, 2>&), const std::string& operation) {
+	//Wysy³anie ¿¹dania obliczenia (zale¿ne od przekazanej funkcji)
+	void calculation(void(*argInputFunc)(std::array<std::string, 2>&, const std::string&), const std::string& operation, const std::string& calcSign) {
 		//Podawanie argumentów
 		std::array<std::string, 2> args{ "","" };
 
-		argInputFunc(args);
+		argInputFunc(args, calcSign);
 
 		unsigned int argNum = 0;
 		for (const std::string& arg : args) { if (!arg.empty()) { argNum++; } }
@@ -440,38 +599,6 @@ private:
 		}
 	}
 
-	//Historia (dla identyfikatora sesji)
-	void history_by_session_id() {
-		TextProtocol histProtocol(GET_CURRENT_TIME(), sessionId, 0);
-		histProtocol.operation = OP_HISTORY_WHOLE;
-		send_text_protocol(histProtocol, FIELD_OPERATION);
-
-		std::vector<TextProtocol> history;
-		byte failCount = 0;
-		while (true) {
-			std::string received;
-			if (receive_text_protocol(received)) {
-				if (received != "") {
-					const TextProtocol receivedProtocol(received);
-					if (receivedProtocol.operation != OP_ID_SESSION && receivedProtocol.status != STATUS_NOT_FOUND &&
-						receivedProtocol.status != STATUS_FORBIDDEN && receivedProtocol.status != STATUS_FOUND) {
-						history.push_back(receivedProtocol);
-						//Odbieranie koñczy siê przy natrafieniu na numer sekwencyjny 0
-						if (receivedProtocol.sequenceNumber == 0 && receivedProtocol.sessionId != 0) { break; }
-					}
-				}
-			}
-			else { failCount++; }
-			if (failCount == 10) { break; }
-		}
-
-
-		print_message_sequence_hist_whole(history);
-
-		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-		CONSOLE_MANIP::press_any_key_pause();
-	}
-
 	//Wyœwietlanie sekwencji komunikatów
 	void print_message_sequence(const std::vector<TextProtocol>& sequence) const {
 		std::string calcSign;
@@ -551,6 +678,38 @@ private:
 		}
 	}
 
+	//Historia (dla identyfikatora sesji)
+	void history_by_session_id() {
+		TextProtocol histProtocol(GET_CURRENT_TIME(), sessionId, 0);
+		histProtocol.operation = OP_HISTORY_WHOLE;
+		send_text_protocol(histProtocol, FIELD_OPERATION);
+
+		std::vector<TextProtocol> history;
+		byte failCount = 0;
+		while (true) {
+			std::string received;
+			if (receive_text_protocol(received)) {
+				if (received != "") {
+					const TextProtocol receivedProtocol(received);
+					if (receivedProtocol.operation != OP_ID_SESSION && receivedProtocol.status != STATUS_NOT_FOUND &&
+						receivedProtocol.status != STATUS_FORBIDDEN && receivedProtocol.status != STATUS_FOUND) {
+						history.push_back(receivedProtocol);
+						//Odbieranie koñczy siê przy natrafieniu na numer sekwencyjny 0
+						if (receivedProtocol.sequenceNumber == 0 && receivedProtocol.sessionId != 0) { break; }
+					}
+				}
+			}
+			else { failCount++; }
+			if (failCount == 10) { break; }
+		}
+
+
+		print_message_sequence_hist_whole(history);
+
+		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
+		CONSOLE_MANIP::press_any_key_pause();
+	}
+
 	//Historia identyfikatorze obliczeñ
 	void history_by_calc_id() {
 		std::string calcId;
@@ -588,237 +747,4 @@ private:
 		CONSOLE_MANIP::press_any_key_pause();
 	}
 
-	//Funkcja wywo³uj¹ca wybieranie akcji i wykonuj¹ca wybór
-	void action_choice() {
-		sessionIdInfo = "Identyfikator sesji: " + std::to_string(sessionId);
-
-		byte choice = 1;
-		while (true) {
-			//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
-			CONSOLE_MANIP::clear_console();
-			CONSOLE_MANIP::show_console_cursor(false);
-			CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
-			CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
-			CONSOLE_MANIP::print_text(2, 2, actionChoice);
-
-			//G³ówne menu wyboru akcji
-			action_choice_main_menu(choice);
-
-			//Zakoñczenie sesji
-			if (choice == 1) {
-				TextProtocol protocol(GET_CURRENT_TIME(), sessionId, 0);
-				protocol.operation = OP_END;
-				if (!send_text_protocol(protocol, FIELD_OPERATION)) {
-					sync_cout << "B³¹d wysy³ania.\n";
-				}
-				return;
-			}
-
-			//Obliczenia
-			else if (choice == 2) {
-				calculation_menu();
-			}
-
-			//Historia
-			else if (choice == 3) {
-				history_menu();
-			}
-		}
-	}
-
-	//Menu wybierania akcji
-	void action_choice_main_menu(byte& choice) const {
-		const std::string actionChoice = "Wybór akcji:";
-		std::string disconnect = " Zakoñczenie sesji.";
-		std::string calculate = " Obliczenie.";
-		std::string history = " Historia.";
-
-		while (true) {
-			//DODAWANIE wskaŸnika wybranej opcji
-			disconnect[0] = ' ';
-			calculate[0] = ' ';
-			history[0] = ' ';
-			if (choice == 1) {
-				disconnect[0] = '>';
-			}
-			else if (choice == 2) {
-				calculate[0] = '>';
-			}
-			else if (choice == 3) {
-				history[0] = '>';
-			}
-
-			//Wyœwietlanie opcji
-			CONSOLE_MANIP::print_text(2, 4, disconnect);
-			CONSOLE_MANIP::print_text(2, 5, calculate);
-			CONSOLE_MANIP::print_text(2, 6, history);
-
-			//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
-			// jego akcja nie zosta³a wielokrotnie wykonana
-			CONSOLE_MANIP::clear_console_input_buffer();
-
-			//Sprawdzanie naciœniêtych klawiszy
-			if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
-			else if (CONSOLE_MANIP::check_arrow("DOWN") && choice < 3) { choice++; }
-			else if (CONSOLE_MANIP::check_enter()) { break; }
-		}
-	}
-
-	//Menu akcji obliczeñ
-	void calculation_menu() {
-		byte choice = 1;
-		std::string goBackText = " Powrót.";
-		std::string additionText = " Dodanie dwóch liczb.";
-		std::string subtractionText = " Odjêcie dwóch liczb.";
-		std::string multiplicationText = " Mno¿enie dwóch liczb.";
-		std::string divisionText = " Dzielenie dwóch liczb.";
-		std::string factorialText = " Silnia z liczby.";
-
-		while (true) {
-			//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
-			CONSOLE_MANIP::clear_console();
-			CONSOLE_MANIP::show_console_cursor(false);
-			CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
-			CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
-			CONSOLE_MANIP::print_text(2, 2, actionChoice);
-
-			while (true) {
-				//DODAWANIE wskaŸnika wybranej opcji
-				goBackText[0] = ' ';
-				additionText[0] = ' ';
-				subtractionText[0] = ' ';
-				multiplicationText[0] = ' ';
-				divisionText[0] = ' ';
-				factorialText[0] = ' ';
-				if (choice == 1) { goBackText[0] = '>'; }
-				else if (choice == 2) { additionText[0] = '>'; }
-				else if (choice == 3) { subtractionText[0] = '>'; }
-				else if (choice == 4) { multiplicationText[0] = '>'; }
-				else if (choice == 5) { divisionText[0] = '>'; }
-				else if (choice == 6) { factorialText[0] = '>'; }
-
-				//Wyœwietlanie opcji
-				CONSOLE_MANIP::print_text(2, 4, goBackText);
-				CONSOLE_MANIP::print_text(2, 5, additionText);
-				CONSOLE_MANIP::print_text(2, 6, subtractionText);
-				CONSOLE_MANIP::print_text(2, 7, multiplicationText);
-				CONSOLE_MANIP::print_text(2, 8, divisionText);
-				CONSOLE_MANIP::print_text(2, 9, factorialText);
-
-				//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
-				// jego akcja nie zosta³a wielokrotnie wykonana
-				CONSOLE_MANIP::clear_console_input_buffer();
-
-				//Sprawdzanie naciœniêtych klawiszy
-				if (CONSOLE_MANIP::check_escape()) { choice = 1; break; }
-				else if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
-				else if (CONSOLE_MANIP::check_arrow("DOWN") && choice < 6) { choice++; }
-				else if (CONSOLE_MANIP::check_enter()) { break; }
-			}
-
-			//Przejœcie do wykonywania wybranego dzia³ania
-
-			//Powrót
-			if (choice == 1) { break; }
-			//Dodawanie
-			else if (choice == 2) {
-				calculation(&arg_input_two_add, OP_ADD);
-			}
-			//Odejmowanie
-			else if (choice == 3) {
-				calculation(&arg_input_two_subt, OP_SUBT);
-			}
-			//Mno¿enie
-			else if (choice == 4) {
-				calculation(&arg_input_two_multp, OP_MULTP);
-			}
-			//Dzielenie
-			else if (choice == 5) {
-				calculation(&arg_input_two_div, OP_DIV);
-			}
-			//Silnia
-			else if (choice == 6) {
-				calculation(&arg_input_one_uint_fact, OP_FACT);
-			}
-		}
-	}
-
-	//Menu historii
-	void history_menu() {
-		byte choice = 1;
-		std::string goBackText = " Powrót.";
-		std::string wholeHistory = " Wyœwietl ca³¹ historiê.";
-		std::string byCalcId = " Wyœwietl obliczenie o podanym identyfikatorze.";
-
-		while (true) {
-			//Wyœwietlanie obramowania, sessionId sesji i tekstu odnoœnie wyboru
-			CONSOLE_MANIP::clear_console();
-			CONSOLE_MANIP::show_console_cursor(false);
-			CONSOLE_MANIP::print_box(0, 0, boxWidth, boxHeight);
-			CONSOLE_MANIP::print_text(boxWidth - sessionIdInfo.length() - 2, 1, sessionIdInfo);
-			CONSOLE_MANIP::print_text(2, 2, actionChoice);
-
-			while (true) {
-				//DODAWANIE wskaŸnika wybranej opcji
-				goBackText[0] = ' ';
-				wholeHistory[0] = ' ';
-				byCalcId[0] = ' ';
-				if (choice == 1) { goBackText[0] = '>'; }
-				else if (choice == 2) { wholeHistory[0] = '>'; }
-				else if (choice == 3) { byCalcId[0] = '>'; }
-
-				//Wyœwietlanie opcji
-				CONSOLE_MANIP::print_text(2, 4, goBackText);
-				CONSOLE_MANIP::print_text(2, 5, wholeHistory);
-				CONSOLE_MANIP::print_text(2, 6, byCalcId);
-
-				//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
-				// jego akcja nie zosta³a wielokrotnie wykonana
-				CONSOLE_MANIP::clear_console_input_buffer();
-
-				//Sprawdzanie naciœniêtych klawiszy
-				if (CONSOLE_MANIP::check_escape()) { choice = 1; break; }
-				else if (CONSOLE_MANIP::check_arrow("UP") && choice > 1) { choice--; }
-				else if (CONSOLE_MANIP::check_arrow("DOWN") && choice < 3) { choice++; }
-				else if (CONSOLE_MANIP::check_enter()) { break; }
-			}
-
-			//Przejœcie do wykonywania wybranej akcji
-
-			//Powrót
-			if (choice == 1) { break; }
-			//Ca³a historia
-			else if (choice == 2) {
-				history_by_session_id();
-			}
-			//Po identyfikatorze obliczeñ
-			else if (choice == 3) {
-				history_by_calc_id();
-			}
-		}
-	}
-
-public:
-	unsigned int sessionId = 0;
-
-	explicit ClientUDP(const unsigned short& Port1) :NodeUDP(Port1) {
-		messages = false;
-
-		const int iTimeout = 5000;
-		setsockopt(nodeSocket,
-			SOL_SOCKET,
-			SO_RCVTIMEO,
-			reinterpret_cast<const char *>(&iTimeout),
-			sizeof(iTimeout));
-	}
-
-	bool start_session() {
-		//Szukanie serwera
-		if (!find_server()) { return false; }
-
-		action_choice();
-
-		if (otherAddr.sin_addr.s_addr == inet_addr("127.0.0.1")) { otherAddr.sin_port -= 1; }
-		return true;
-	}
 };

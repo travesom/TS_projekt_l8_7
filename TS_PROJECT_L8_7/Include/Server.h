@@ -16,23 +16,68 @@ inline int randInt(const int &min, const int &max) {
 
 class ServerUDP : public NodeUDP {
 private:
-	unsigned int calculationId = 1;
+	unsigned int calculationId = 1; //Id obecnego obliczenia
 
 	/**
 		* Mapa przechowuj¹ca historiê obliczeñ. \n
 		* Kluczem jest identyfikator obliczeñ, a wartoœci¹ para identyfikator sesji, komunikaty obliczeñ.
 	*/
 	std::map<unsigned int, std::pair<unsigned int, std::vector<TextProtocol>>> history;
+	std::set<unsigned int>sessionIds; //Zbiór u¿ywanych identyfikatorów sesji
+	const unsigned short port; //Port (zmienna u¿ywania przy bindowaniu dla pêtli lokalnej)
+	sockaddr_in serverAddr{}; //Adress serwera (u¿ywany przy bindowaniu)
 
-	//Zbiór u¿ywanych identyfikatorów sesji
-	std::set<unsigned int>sessionIds;
 
-	//Port (zmienna u¿ywania przy bindowaniu dla pêtli lokalnej)
-	const unsigned short port;
+public:
+	//Konstruktor
+	explicit ServerUDP(const unsigned short& Port1) : NodeUDP(Port1), port(htons(Port1)) {
+		serverAddr.sin_family = AF_INET;
+		serverAddr.sin_port = htons(Port1);
+		serverAddr.sin_addr.s_addr = INADDR_ANY;
+		//Bindowanie gniazdka dla adresu odbierania
+		sync_cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
+		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
+		if (iResult != 0) {
+			sync_cout << "Bindowanie (inicjalizacja) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			return;
+		}
 
-	//Adress serwera (u¿ywany przy bindowaniu)
-	sockaddr_in serverAddr{};
+		const int iTimeout = 5000;
+		setsockopt(nodeSocket,
+			SOL_SOCKET,
+			SO_RCVTIMEO,
+			reinterpret_cast<const char *>(&iTimeout),
+			sizeof(iTimeout));
+	};
 
+	//Funkcja rozpoczynaj¹ca sesjê
+	bool start_session() {
+		//Czekanie na ¿¹danie rozpoczêcia sesji
+		bool sessionResult = false;
+		if (listen_for_client()) { sessionResult = session(); }
+
+		closesocket(nodeSocket);
+		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		serverAddr.sin_addr.s_addr = INADDR_ANY;
+		serverAddr.sin_port = port;
+		sync_cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
+		Sleep(100);
+		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
+
+		if (iResult != 0) {
+			sync_cout << "Bindowanie (po sesji) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			return false;
+		}
+		else {
+			sync_cout << "Bindowanie (po sesji) powiod³o siê\n";
+		}
+
+		if (!sessionResult) { return false; }
+		else { return true; }
+	}
+
+
+private:
 	//Bindowanie pod dany adres
 	bool bind_to_address(const std::string& address) {
 		serverAddr.sin_addr.s_addr = inet_addr(address.c_str());
@@ -42,15 +87,15 @@ private:
 
 		closesocket(nodeSocket);
 		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-		std::cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
+		sync_cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
 		Sleep(100);
 		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
 		if (iResult != 0) {
-			std::cout << "Bindowanie (funkcja) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			sync_cout << "Bindowanie (funkcja) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return false;
 		}
 		else {
-			std::cout << "Bindowanie (funkcja) powiod³o siê\n";
+			sync_cout << "Bindowanie (funkcja) powiod³o siê\n";
 		}
 		return true;
 	}
@@ -79,12 +124,12 @@ private:
 		std::string received;
 		TextProtocol receivedProt;
 
-		std::cout << "\nNas³uchiwanie na klientów.\n";
+		sync_cout << "\nNas³uchiwanie na klientów.\n";
 		byte failCount = 0;
 listening:
 		while (true) {
 			if (receive_text_protocol(received)) {
-				std::cout << "Odbieranie (nas³uchiwanie): " << received << '\n';
+				sync_cout << "Odbieranie (nas³uchiwanie): " << received << '\n';
 				receivedProt = TextProtocol(received);
 
 				if (receivedProt.operation == OP_BEGIN) {/*nic*/ }
@@ -97,7 +142,7 @@ listening:
 			}
 			else {
 				failCount++;
-				std::cout << "Pozosta³o prób: " << 11 - failCount << '\n';
+				sync_cout << "Pozosta³o prób: " << 11 - failCount << '\n';
 			}
 			if (failCount == 11) { break; }
 		}
@@ -118,18 +163,18 @@ listening:
 			TextProtocol idProtocol(GET_CURRENT_TIME(), sessionId, 0);
 			idProtocol.operation = OP_ID_SESSION;
 			send_text_protocol(idProtocol, FIELD_OPERATION);
-			std::cout << "Wysy³anie (id): " << idProtocol.to_string(idProtocol.get_field()) << '\n';
+			sync_cout << "Wysy³anie (id): " << idProtocol.to_string(idProtocol.get_field()) << '\n';
 
 			//Odbieranie potwierdzenia od klienta
 			failCount = 0;
 			while (receivedProt.operation != OP_ACK) {
 				if (receivedProt.operation != OP_BEGIN) {
 					if (receive_text_protocol(received)) {
-						std::cout << "Odbieranie (potwierdzenie): " << received << '\n';
+						sync_cout << "Odbieranie (potwierdzenie): " << received << '\n';
 						receivedProt = TextProtocol(received);
 						if (receivedProt.get_field() == FIELD_OPERATION) {
 							if (receivedProt.operation == OP_ACK) {
-								std::cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
+								sync_cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
 								return true;
 							}
 						}
@@ -139,7 +184,7 @@ listening:
 					else {
 						//Retransmisja identyfikatora sesji
 						send_text_protocol(idProtocol, FIELD_OPERATION);
-						std::cout << "Wysy³anie (id): " << idProtocol.to_string(idProtocol.get_field()) << '\n';
+						sync_cout << "Wysy³anie (id): " << idProtocol.to_string(idProtocol.get_field()) << '\n';
 					}
 				}
 				else{
@@ -147,14 +192,14 @@ listening:
 					nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 					serverAddr.sin_addr.s_addr = INADDR_ANY;
 					serverAddr.sin_port = port;
-					std::cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
+					sync_cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
 					Sleep(100);
 					bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
 					goto listening;
 				}
 			}
 		}
-		std::cout << "Rozpoczynanie sesji zakoñczone niepowodzeniem.\n\n";
+		sync_cout << "Rozpoczynanie sesji zakoñczone niepowodzeniem.\n\n";
 		return false;
 	}
 
@@ -277,11 +322,11 @@ listening:
 		resultMessages.push_back(calcIdProtocol);
 
 		//Wysy³anie wyniku
-		std::cout << "\nWysy³anie wyniku...\n";
+		sync_cout << "\nWysy³anie wyniku...\n";
 		unsigned int sequenceNumber = resultMessages.size() - 1;
 		for (TextProtocol prot : resultMessages) {
 			prot.sequenceNumber = sequenceNumber;
-			std::cout << "Wysy³anie (obliczenia): " << prot.to_string(prot.get_field()) << '\n';
+			sync_cout << "Wysy³anie (obliczenia): " << prot.to_string(prot.get_field()) << '\n';
 			send_text_protocol(prot, prot.get_field());
 			sequenceNumber--;
 		}
@@ -322,7 +367,7 @@ listening:
 				for (TextProtocol prot : sessionHistory) {
 					//Wys³anie komunikatu
 					prot.sequenceNumber = sequenceNumber;
-					std::cout << prot.to_string(prot.get_field()) << '\n';
+					sync_cout << prot.to_string(prot.get_field()) << '\n';
 
 					send_text_protocol(prot, prot.get_field());
 
@@ -337,7 +382,7 @@ listening:
 		TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		statusProtocol.status = STATUS_HISTORY_EMPTY;
 		send_text_protocol(statusProtocol, statusProtocol.get_field());
-		std::cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
+		sync_cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
 	}
 
 	//Historia identyfikatorze obliczeñ
@@ -352,7 +397,7 @@ listening:
 					TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
 					statusProtocol.status = STATUS_FORBIDDEN;
 					send_text_protocol(statusProtocol, statusProtocol.get_field());
-					std::cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
+					sync_cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
 					return;
 				}
 				else if (history[calcId].first == sessionId) {
@@ -370,7 +415,7 @@ listening:
 
 					for (TextProtocol prot : history[calcId].second) {
 						prot.sequenceNumber = sequenceNumber;
-						std::cout << "Wysy³anie (historia): " << prot.to_string(prot.get_field()) << '\n';
+						sync_cout << "Wysy³anie (historia): " << prot.to_string(prot.get_field()) << '\n';
 						send_text_protocol(prot, prot.get_field());
 						sequenceNumber--;
 						if (sequenceNumber < 0) { break; }
@@ -383,7 +428,7 @@ listening:
 		TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		statusProtocol.status = STATUS_NOT_FOUND;
 		send_text_protocol(statusProtocol, statusProtocol.get_field());
-		std::cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
+		sync_cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
 	}
 
 	//W tej funkcji znajduje siê pêtla sesji
@@ -395,7 +440,7 @@ listening:
 			TextProtocol operationProtocol(received);
 
 			if (operationProtocol.get_field() == FIELD_OPERATION) {
-				std::cout << "Odbieranie (sesja): " << received << '\n';
+				sync_cout << "Odbieranie (sesja): " << received << '\n';
 				//Operacje nie do obliczeñ -------------------------------------------------------------
 
 				//Zakoñczenie
@@ -441,53 +486,4 @@ listening:
 		}
 	}
 
-
-
-public:
-	//Konstruktor i destruktor
-	ServerUDP(const unsigned short& Port1) : NodeUDP(Port1), port(htons(Port1)) {
-		serverAddr.sin_family = AF_INET;
-		serverAddr.sin_port = htons(Port1);
-		serverAddr.sin_addr.s_addr = INADDR_ANY;
-		//Bindowanie gniazdka dla adresu odbierania
-		std::cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
-		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
-		if (iResult != 0) {
-			std::cout << "Bindowanie (inicjalizacja) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
-			return;
-		}
-
-		const int iTimeout = 5000;
-		setsockopt(nodeSocket,
-			SOL_SOCKET,
-			SO_RCVTIMEO,
-			reinterpret_cast<const char *>(&iTimeout),
-			sizeof(iTimeout));
-	};
-
-	//Rozpoczêcie sesji
-	bool start_session() {
-		//Czekanie na ¿¹danie rozpoczêcia sesji
-		bool sessionResult = false;
-		if (listen_for_client()) { sessionResult = session(); }
-
-		closesocket(nodeSocket);
-		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-		serverAddr.sin_addr.s_addr = INADDR_ANY;
-		serverAddr.sin_port = port;
-		std::cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
-		Sleep(100);
-		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
-
-		if (iResult != 0) {
-			std::cout << "Bindowanie (po sesji) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
-			return false;
-		}
-		else {
-			std::cout << "Bindowanie (po sesji) powiod³o siê\n";
-		}
-
-		if (!sessionResult) { return false; }
-		else { return true; }
-	}
 };

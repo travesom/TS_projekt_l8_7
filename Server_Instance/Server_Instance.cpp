@@ -6,14 +6,12 @@
 int main()
 {
 	system("chcp 1250");
-	system("cls");
+	CONSOLE_MANIP::clear_console();
 
-	const unsigned short Port1 = 27272;
-
-	ServerUDP server(Port1);
+	ServerUDP server(PORT_TO_SET);
 	while (true) {
 		if(!server.start_session()){
-			std::cout << "\nSesja przerwana!\n";
+			sync_cout << "\nSesja przerwana!\n";
 		}
 	}
 }

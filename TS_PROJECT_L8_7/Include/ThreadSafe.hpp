@@ -3,16 +3,21 @@
 #include <iomanip>
 #include <mutex>
 
+/*
+ * Kod bazowany na informacjach z poni¿szej strony:
+ * https://stackoverflow.com/questions/14718124/how-to-easily-make-stdcout-thread-safe
+ */
+
 //Bezpieczny dla wielu w¹tków std::cout
 class syncCout {
 private:
 	std::mutex mutex;
 
 public:
-	syncCout(){}
+	syncCout() {}
 
 	template<typename T>
-	syncCout& operator<<(const T& _t){
+	syncCout& operator<<(const T& _t) {
 		mutex.lock();
 		std::cout << _t;
 		mutex.unlock();
@@ -24,7 +29,7 @@ public:
 		return *this;
 	}
 
-	syncCout& operator << (std::ostream& (*fp)(std::ostream&)){
+	syncCout& operator << (std::ostream& (*fp)(std::ostream&)) {
 		mutex.lock();
 		std::cout << fp;
 		mutex.unlock();
@@ -38,7 +43,7 @@ private:
 	std::mutex mutex;
 
 public:
-	syncCerr(){}
+	syncCerr() {}
 
 	template<typename T>
 	syncCerr& operator<<(const T& _t)
@@ -58,6 +63,6 @@ public:
 	}
 };
 
-//Statyczne obiekty do u¿ywacia zamiast std::cout i std::cerr
+//Statyczne obiekty do u¿ywania zamiast std::cout i std::cerr
 static syncCout sync_cout;
 static syncCerr sync_cerr;
