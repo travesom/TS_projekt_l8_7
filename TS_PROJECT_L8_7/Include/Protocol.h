@@ -2,6 +2,11 @@
 #include "Defines.h"
 #include <sstream>
 #include <iomanip>
+#include <iostream>
+#include "Console.hpp"
+
+//Zmienna decyduj¹ca czy na koñcu komunikatu jest dodawan spacja
+static const bool MESSAGE_END_SPACE = true;
 
 inline std::ostream& operator << (std::ostream& os, const tm& time) {
 	os << std::setfill('0') << std::setw(2) << time.tm_mday << '.' << std::setfill('0') << std::setw(2) << time.tm_mon << '.' << std::setfill('0') << std::setw(4) << time.tm_year << '.'
@@ -36,10 +41,12 @@ inline void double_remove_end_zero(std::string& numberStr) {
 
 class TextProtocol {
 public:
+	//Pola obowi¹zkowe
 	tm  time;                    //znacznik czasowy
 	unsigned int sessionId;      //Identyfikator sesji
 	unsigned int sequenceNumber; //Numer sekwencyjny (pole obowi¹zkowe)
 
+	//Pola wybieralne
 	std::string operation;      //Pole operacji
 	std::string status;         //Pole statusu
 	std::string address;        //Pole adresu (wykorzystywane przy szukaniu serwera)
@@ -80,7 +87,7 @@ public:
 		result += HEAD_SESSION_ID + std::to_string(sessionId) + ' ';
 
 		//Pole numer sekwencyjny (pole obowi¹zkowe)
-		result += HEAD_SEQNUM; result += std::to_string(sequenceNumber) + ' ';
+		result += HEAD_SEQ_NUM; result += std::to_string(sequenceNumber) + ' ';
 
 		//Pole numer operacja
 		if (field == FIELD_OPERATION) { result += HEAD_OPERATION + operation; }
@@ -97,7 +104,7 @@ public:
 		//Pole status
 		else if (field == FIELD_ADDRESS) { result += HEAD_ADDRESS + address; }
 
-		result += ' ';
+		if (MESSAGE_END_SPACE) { result += ' '; }
 
 		return result;
 	}
@@ -114,161 +121,83 @@ public:
 	void from_string(const std::string& data) {
 		this->clear();
 		if (!data.empty()) {
-			auto iterator = data.find(HEAD_TIME);
 			std::string temp;
+			auto read_until = [&data](const unsigned int& from, const char& sign, std::string& temp) {
+				temp.clear();
+				for (auto i = from; i < data.size(); i++) {
+					if (data[i] == '\0' || data[i] == sign) { break; }
+					temp += data[i];
+				}
+			};
+			auto parse_header = [&read_until, &data](const std::string& header, std::string& temp) {
+				const auto iterator = data.find(header);
+				if (iterator != std::string::npos) {
+					read_until(iterator + header.length(), ' ', temp);
+					return true;
+				}
+				else { return false; }
+			};
 
 			//Czas (pole obowi¹zkowe)
 			{
+				const auto iterator = data.find(HEAD_TIME);
+
 				//Godziny
-				temp.clear();
-				for (auto i = iterator + HEAD_TIME.length(); i < data.size(); i++) {
-					if (data[i] == '.') { break; }
-					temp += data[i];
-				}
+				read_until(iterator + HEAD_TIME.length(), '.', temp);
 				time.tm_mday = std::stoi(temp);
 
 				//Godziny
-				temp.clear();
-				for (auto i = iterator + HEAD_TIME.length()+3; i < data.size(); i++) {
-					if (data[i] == '.') { break; }
-					temp += data[i];
-				}
+				read_until(iterator + HEAD_TIME.length() + 3, '.', temp);
 				time.tm_mon = std::stoi(temp);
 
 				//Godziny
-				temp.clear();
-				for (auto i = iterator + HEAD_TIME.length()+6; i < data.size(); i++) {
-					if (data[i] == '.') { break; }
-					temp += data[i];
-				}
+				read_until(iterator + HEAD_TIME.length() + 6, '.', temp);
 				time.tm_year = std::stoi(temp);
 
 				//Godziny
-				temp.clear();
-				for (auto i = iterator + HEAD_TIME.length()+11; i < data.size(); i++) {
-					if (data[i] == ':') { break; }
-					temp += data[i];
-				}
+				read_until(iterator + HEAD_TIME.length() + 11, ':', temp);
 				time.tm_hour = std::stoi(temp);
 
 				//Minuty
-				temp.clear();
-				for (auto i = iterator + HEAD_TIME.length() + 14; i < data.size(); i++) {
-					if (data[i] == ':') { break; }
-					temp += data[i];
-				}
+				read_until(iterator + HEAD_TIME.length() + 14, ':', temp);
 				time.tm_min = std::stoi(temp);
 
-
 				//Sekundy
-				temp.clear();
-				for (auto i = iterator + HEAD_TIME.length() + 17; i < data.size(); i++) {
-					if (data[i] == ' ') { break; }
-					temp += data[i];
-				}
+				read_until(iterator + HEAD_TIME.length() + 17, ' ', temp);
 				time.tm_sec = std::stoi(temp);
 			}
 
 			//Numer Identyfikacyjny (pole obowi¹zkowe)
-			{
-				temp.clear();
-				iterator = data.find(HEAD_SESSION_ID);
-				for (auto i = iterator + HEAD_SESSION_ID.length(); i < data.size(); i++) {
-					if (data[i] == '\0' || data[i] == ' ') { break; }
-					temp += data[i];
-				}
-				temp += ' ';
-				sessionId = std::stoi(temp);
-			}
+			if (parse_header(HEAD_SESSION_ID, temp)) { sessionId = std::stoi(temp); }
 
 			//Numer Sekwencyjny (pole obowi¹zkowe)
-			{
-				iterator = data.find(HEAD_SEQNUM);
-				if (iterator != std::string::npos) {
-					temp.clear();
-					for (auto i = iterator + HEAD_SEQNUM.length(); i < data.size(); i++) {
-						if (data[i] == '\0' || data[i] == ' ') { break; }
-						temp += data[i];
-					}
-					sequenceNumber = std::stoi(temp);
-				}
-			}
+			if (parse_header(HEAD_SEQ_NUM, temp)) { sequenceNumber = std::stoi(temp); }
 
 			//OPERACJA
-			{
-				iterator = data.find(HEAD_OPERATION);
-				if (iterator != std::string::npos) {
-					temp.clear();
-					for (auto i = iterator + HEAD_OPERATION.length(); i < data.size(); i++) {
-						if (data[i] == '\0' || data[i] == ' ') { break; }
-						temp += data[i];
-					}
-					operation = temp;
-				}
-			}
+			if (parse_header(HEAD_OPERATION, temp)) { operation = temp; }
 
 			//Status 
-			{
-				iterator = data.find(HEAD_STATUS);
-				if (iterator != std::string::npos) {
-					temp.clear();
-					for (auto i = iterator + HEAD_STATUS.length(); i < data.size(); i++) {
-						if (data[i] == '\0' || data[i] == ' ') { break; }
-						temp += data[i];
-					}
-					status = temp;
-				}
-			}
+			else if (parse_header(HEAD_STATUS, temp)) { status = temp; }
 
 			//Liczba
-			{
-				iterator = data.find(HEAD_NUMBER);
-				if (iterator != std::string::npos) {
-					temp.clear();
-					for (auto i = iterator + HEAD_NUMBER.length(); i < data.size(); i++) {
-						if (data[i] == '\0' || data[i] == ' ') { break; }
-						temp += data[i];
-					}
-					number = stod(temp);
-				}
-			}
+			else if (parse_header(HEAD_NUMBER, temp)) { number = std::stod(temp); }
 
 			//Identyfikator obliczeñ
-			{
-				iterator = data.find(HEAD_CALC_ID);
-				if (iterator != std::string::npos) {
-					temp.clear();
-					for (auto i = iterator + HEAD_CALC_ID.length(); i < data.size(); i++) {
-						if (data[i] == '\0' || data[i] == ' ') { break; }
-						temp += data[i];
-					}
-					calculationId = stoi(temp);
-				}
-			}
+			else if (parse_header(HEAD_CALC_ID, temp)) { calculationId = std::stoi(temp); }
 
 			//Adres
-			{
-				iterator = data.find(HEAD_ADDRESS);
-				if (iterator != std::string::npos) {
-					temp.clear();
-					for (auto i = iterator + HEAD_ADDRESS.length(); i < data.size(); i++) {
-						if (data[i] == '\0' || data[i] == ' ') { break; }
-						temp += data[i];
-					}
-					address = temp;
-				}
-			}
+			else if (parse_header(HEAD_ADDRESS, temp)) { address = temp; }
 		}
 	}
 
 	//Zerowanie protoko³u
 	void clear() {
+		time = tm();
+		sessionId = NULL;
+		sequenceNumber = NULL;
 		operation.clear();
 		status.clear();
 		number = NAN;
-		sequenceNumber = NULL;
-		sessionId = NULL;
 		calculationId = NULL;
-		time = tm();
 	}
 };

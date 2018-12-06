@@ -336,7 +336,7 @@ public:
 		auto timeStart = std::chrono::system_clock::now();
 		const std::string searchingText = "Naciœnij dowolny przycisk, aby kontynuowaæ ";
 		unsigned int dotNumber = 0;
-		std::string dotsText = "";
+		std::string dotsText = dotsText;
 
 		const COORD startCursorPosition = cursor_get_pos();
 

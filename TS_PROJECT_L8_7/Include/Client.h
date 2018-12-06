@@ -22,6 +22,9 @@ public:
 		set_receive_timeout(recvTimeout);
 	}
 
+	//Destruktor
+	~ClientUDP() {}
+
 	//Funkcja rozpoczynaj¹ca sesjê
 	bool start_session() {
 		//Szukanie serwera
@@ -43,7 +46,7 @@ private:
 		auto timeStart = std::chrono::system_clock::now();
 		const std::string searchingText = "Szukanie serwera ";
 		unsigned int dotNumber = 0;
-		std::string dotsText = "";
+		std::string dotsText;
 
 		CONSOLE_MANIP::print_text(3, 2, searchingText + dotsText);
 		while (true) {
@@ -52,7 +55,7 @@ private:
 				dotNumber++;
 				if (dotNumber > 3) {
 					dotNumber = 0;
-					dotsText = "";
+					dotsText.clear();
 				}
 				else { dotsText += ". "; }
 				CONSOLE_MANIP::print_text(3, 2, searchingText + "                  ");
@@ -88,6 +91,7 @@ private:
 				send_text_protocol_to(addressProtocol, addressProtocol.get_field(), address);
 			}
 		};
+
 		//Wykonanie powy¿szego wysy³ania
 		send_op_begin();
 
@@ -98,11 +102,10 @@ private:
 			std::string received;
 			if (receive_text_protocol(received)) {
 				const TextProtocol recvProtocol(received);
-				if (recvProtocol.get_field() == FIELD_OPERATION && recvProtocol.operation == OP_ID_SESSION) {
+				if (recvProtocol.operation == OP_ID_SESSION) {
 					sessionId = recvProtocol.sessionId;
 					sessionIdInfo = "Identyfikator sesji: " + std::to_string(sessionId);
 					findSuccess = true;
-					break;
 				}
 				if (recvProtocol.sequenceNumber == 0) { break; }
 			}
@@ -110,14 +113,14 @@ private:
 				CONSOLE_MANIP::print_text(3 + 2 * failCount, 1, "X");
 				failCount++;
 			}
-			if (failCount == 11) { break; }
+			if (failCount >= 11) { break; }
 			else {
 				//Wysy³anie ¿¹dania rozpoczêcia sesji do serwera
 				send_op_begin();
 			}
 		}
 
-		if (failCount < 11) {
+		if (findSuccess) {
 			//Wys³anie potwierdzenia
 			TextProtocol ackProtocol(GET_CURRENT_TIME(), sessionId, 0);
 			ackProtocol.operation = OP_ACK;
@@ -128,9 +131,7 @@ private:
 		//Zatrzymanie w¹tku do wyœwietlania animacji szukanie serwera
 		textStop = true;
 		textThread.join();
-		if (!findSuccess) { return false; }
-
-		return true;
+		return findSuccess;
 	}
 
 
@@ -615,9 +616,7 @@ private:
 			if (choice == 1) {
 				TextProtocol protocol(GET_CURRENT_TIME(), sessionId, 0);
 				protocol.operation = OP_END;
-				if (!send_text_protocol(protocol, FIELD_OPERATION)) {
-					sync_cout << "B³¹d wysy³ania.\n";
-				}
+				send_text_protocol(protocol, FIELD_OPERATION);
 				return;
 			}
 

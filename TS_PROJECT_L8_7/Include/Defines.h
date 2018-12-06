@@ -5,7 +5,7 @@
 #define HEAD_OPERATION  std::string("OP: "  )
 #define HEAD_STATUS	    std::string("ST: "  )
 #define HEAD_NUMBER     std::string("NUM: " )
-#define HEAD_SEQNUM     std::string("NS: "  )
+#define HEAD_SEQ_NUM     std::string("NS: "  )
 #define HEAD_SESSION_ID std::string("ID: "  )
 #define HEAD_CALC_ID    std::string("CID: " )
 #define HEAD_TIME       std::string("TIM: " )
