@@ -116,9 +116,11 @@ private:
 			if (sessionId == 0) { sessionId = receivedProt.sessionId; }
 			//Jeœli klient nie ma identyfikatora sesji (na serwerze)
 			if (sessionIds.find(sessionId) == sessionIds.end() && sessionId == 0) {
+				sessionId = randInt(1, 999);
 				while (true) {
-					sessionId = randInt(1, 99);
 					if (sessionIds.find(sessionId) == sessionIds.end()) { break; }
+					sessionId++;
+					if (sessionId > 999) { sessionId = randInt(1, 999); }
 				}
 			}
 
