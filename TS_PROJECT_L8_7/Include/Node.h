@@ -10,6 +10,8 @@
 #pragma comment(lib, "Iphlpapi.lib")
 
 static const unsigned short PORT_TO_SET = 27272;
+static const unsigned int BufLen = 1024;
+static const unsigned int recvTimeout = 2500;
 
 //Zwraca tablicê adresów IP z tablicy ARP, gdzie adresy podzielone s¹ na 4 czêœci
 inline std::vector<std::vector<std::string>> GET_IP_TABLE_FRAGM() {
@@ -72,8 +74,6 @@ inline std::set<std::string> GET_IP_TABLE() {
 	return IPv4_Table;
 }
 
-static const unsigned int BufLen = 1024;
-static const unsigned int id_message_size = 57;
 
 class NodeUDP {
 protected:
@@ -82,7 +82,7 @@ protected:
 	SOCKET nodeSocket;
 	sockaddr_in otherAddr{};
 
-	//Konstruktor
+	//Konstruktor i destruktor
 	explicit NodeUDP(const unsigned short& Port1) {
 		//Inicjalizacja WinSock
 		const int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -106,8 +106,21 @@ protected:
 	}
 	~NodeUDP() { WSACleanup(); }
 
+	//Funkcja ustawiaj¹ca jak d³ugo dzia³a odbieranie
+	void set_receive_timeout(const int& timeout) const {
+		/*
+		 * Kod bazowany na informacjach z strony:
+		 * https://stackoverflow.com/questions/1824465/set-timeout-for-winsock-recvfrom
+		 */
+		setsockopt(
+			nodeSocket,
+			SOL_SOCKET,
+			SO_RCVTIMEO,
+			reinterpret_cast<const char *>(&timeout),
+			sizeof(timeout)
+		);
+	}
 
-public:
 	//Funkcja odbierania komunikatu
 	bool receive_text_protocol(std::string& received) {
 		char recvBuffer[1024];
@@ -134,6 +147,8 @@ public:
 				break;
 			}
 		}
+
+		if (result.empty()) { return false; }
 
 		received = result;
 		return true;
@@ -177,11 +192,10 @@ public:
 		std::vector<TextProtocol> receivedMessages;
 
 		//Pêtla odbierania danych
-		byte failCount = 0;
 		while (true) {
 			std::string received;
 			if (receive_text_protocol(received)) {
-				if (received != "") {
+				if (!received.empty()) {
 					const TextProtocol receivedProtocol(received);
 					if (receivedProtocol.operation != OP_ID_SESSION) {
 						receivedMessages.push_back(receivedProtocol);
@@ -191,8 +205,6 @@ public:
 					}
 				}
 			}
-			else { failCount++; }
-			if (failCount == 10) { break; }
 		}
 		return receivedMessages;
 	}

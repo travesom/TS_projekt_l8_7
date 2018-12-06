@@ -16,62 +16,62 @@ inline int randInt(const int &min, const int &max) {
 
 class ServerUDP : public NodeUDP {
 private:
-	unsigned int calculationId = 1; //Id obecnego obliczenia
+	unsigned int calculationId = 1;
 
 	/**
 		* Mapa przechowuj¹ca historiê obliczeñ. \n
 		* Kluczem jest identyfikator obliczeñ, a wartoœci¹ para identyfikator sesji, komunikaty obliczeñ.
 	*/
 	std::map<unsigned int, std::pair<unsigned int, std::vector<TextProtocol>>> history;
-	std::set<unsigned int>sessionIds; //Zbiór u¿ywanych identyfikatorów sesji
-	const unsigned short port; //Port (zmienna u¿ywania przy bindowaniu dla pêtli lokalnej)
-	sockaddr_in serverAddr{}; //Adress serwera (u¿ywany przy bindowaniu)
 
+	//Zbiór u¿ywanych identyfikatorów sesji
+	std::set<unsigned int>sessionIds;
 
-public:
-	//Konstruktor
-	explicit ServerUDP(const unsigned short& Port1) : NodeUDP(Port1), port(htons(Port1)) {
-		serverAddr.sin_family = AF_INET;
-		bind_to_address("0.0.0.0");
-		set_receive_timeout(recvTimeout);
-	};
+	//Port (zmienna u¿ywania przy bindowaniu dla pêtli lokalnej)
+	const unsigned short port;
 
-	//Funkcja rozpoczynaj¹ca sesjê
-	bool start_session() {
-		//Czekanie na ¿¹danie rozpoczêcia sesji
-		bool sessionResult = false;
-		if (listen_for_client()) { sessionResult = session(); }
+	//Adress serwera (u¿ywany przy bindowaniu)
+	sockaddr_in serverAddr{};
 
-		bind_to_address("0.0.0.0");
-
-		if (!sessionResult) { return false; }
-		else { return true; }
-	}
-
-
-private:
 	//Bindowanie pod dany adres
 	bool bind_to_address(const std::string& address) {
 		serverAddr.sin_addr.s_addr = inet_addr(address.c_str());
-		if (address == "127.0.0.1") {
+		if (otherAddr.sin_addr.s_addr == inet_addr("127.0.0.1")) {
 			serverAddr.sin_port = port + 1;
 		}
-		else { serverAddr.sin_port = port; }
 
 		closesocket(nodeSocket);
 		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-		sync_cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
+		std::cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
 		Sleep(100);
 		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
-		set_receive_timeout(1000);
 		if (iResult != 0) {
-			sync_cout << "Bindowanie niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			std::cout << "Bindowanie (funkcja) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
 			return false;
 		}
 		else {
-			sync_cout << "Bindowanie powiod³o siê\n";
+			std::cout << "Bindowanie (funkcja) powiod³o siê\n";
 		}
 		return true;
+	}
+
+	//Wys³anie klientowi potwierdzenia
+	void answer_client(const unsigned int sessionId, const std::string address, const std::string serverAddress) const
+	{
+		//Wys³anie sessionId
+		TextProtocol startProtocol(GET_CURRENT_TIME(), sessionId, 2);
+		startProtocol.operation = OP_ID_SESSION;
+		send_text_protocol_to(startProtocol, FIELD_OPERATION, address);
+
+		//Wys³anie adresu serwera
+		TextProtocol addressProtocol(GET_CURRENT_TIME(), sessionId, 1);
+		addressProtocol.address = serverAddress;
+		send_text_protocol_to(addressProtocol, FIELD_ADDRESS, address);
+
+		//Wys³anie adresu klienta
+		TextProtocol clientAddressProtocol(GET_CURRENT_TIME(), sessionId, 0);
+		clientAddressProtocol.address = address;
+		send_text_protocol_to(clientAddressProtocol, FIELD_ADDRESS, address);
 	}
 
 	//Przyjmowanie zg³oszenia
@@ -79,32 +79,29 @@ private:
 		std::string received;
 		TextProtocol receivedProt;
 
-		sync_cout << "\nNas³uchiwanie na klientów.\n";
+		std::cout << "\nNas³uchiwanie na klientów.\n";
 		byte failCount = 0;
-	listening:
+listening:
 		while (true) {
 			if (receive_text_protocol(received)) {
-				sync_cout << "Odbieranie (nas³uchiwanie): " << received << '\n';
+				std::cout << "Odbieranie (nas³uchiwanie): " << received << '\n';
 				receivedProt = TextProtocol(received);
 
 				if (receivedProt.operation == OP_BEGIN) {/*nic*/ }
-				else if (receivedProt.operation == OP_ACK) {
-					sync_cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
+				else if (receivedProt.operation == OP_ACK){
+					std::cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
 					return true;
 				}
 
 				//Jeœli odebrano komunikat z adresem serwera
 				if (receivedProt.get_field() == FIELD_ADDRESS) {
-					if (!bind_to_address(receivedProt.address)) {
-						sync_cout << "Rozpoczynanie sesji zakoñczone niepowodzeniem.\n\n";
-						return false;
-					}
+					if (!bind_to_address(receivedProt.address)) { return false; }
 				}
 				if (receivedProt.sequenceNumber == 0) { break; }
 			}
 			else {
 				failCount++;
-				sync_cout << "Pozosta³o prób: " << 11 - failCount << '\n';
+				std::cout << "Pozosta³o prób: " << 11 - failCount << '\n';
 			}
 			if (failCount == 11) { break; }
 		}
@@ -121,34 +118,47 @@ private:
 				sessionIds.insert(sessionId);
 			}
 
-
-			//Wys³anie identyfikatora sesji ( czêœæ jest w pêtli)
+			//Wys³anie identyfikatora sesji
 			TextProtocol idProtocol(GET_CURRENT_TIME(), sessionId, 0);
 			idProtocol.operation = OP_ID_SESSION;
+			send_text_protocol(idProtocol, FIELD_OPERATION);
+			std::cout << "Wysy³anie (id): " << idProtocol.to_string(idProtocol.get_field()) << '\n';
 
 			//Odbieranie potwierdzenia od klienta
 			failCount = 0;
 			while (receivedProt.operation != OP_ACK) {
-				send_text_protocol(idProtocol, FIELD_OPERATION);
-
-				sync_cout << "Wysy³anie (id): " << idProtocol.to_string(idProtocol.get_field()) << '\n';
-				sync_cout << "Czekanie na potwierdzenie...\n";
-				if (receive_text_protocol(received)) {
-					sync_cout << "Odbieranie (potwierdzenie): " << received << '\n';
-					receivedProt = TextProtocol(received);
-					if (receivedProt.get_field() == FIELD_OPERATION && receivedProt.operation == OP_ACK) {
-						sync_cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
-						return true;
+				if (receivedProt.operation != OP_BEGIN) {
+					if (receive_text_protocol(received)) {
+						std::cout << "Odbieranie (potwierdzenie): " << received << '\n';
+						receivedProt = TextProtocol(received);
+						if (receivedProt.get_field() == FIELD_OPERATION) {
+							if (receivedProt.operation == OP_ACK) {
+								std::cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
+								return true;
+							}
+						}
 					}
-					else if (failCount == 10) {
-						bind_to_address("0.0.0.0");
-						goto listening;
+					else { failCount++; }
+					if (failCount == 11) { break; }
+					else {
+						//Retransmisja identyfikatora sesji
+						send_text_protocol(idProtocol, FIELD_OPERATION);
+						std::cout << "Wysy³anie (id): " << idProtocol.to_string(idProtocol.get_field()) << '\n';
 					}
 				}
-				failCount++;
+				else{
+					closesocket(nodeSocket);
+					nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+					serverAddr.sin_addr.s_addr = INADDR_ANY;
+					serverAddr.sin_port = port;
+					std::cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
+					Sleep(100);
+					bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
+					goto listening;
+				}
 			}
 		}
-		sync_cout << "Rozpoczynanie sesji zakoñczone niepowodzeniem.\n\n";
+		std::cout << "Rozpoczynanie sesji zakoñczone niepowodzeniem.\n\n";
 		return false;
 	}
 
@@ -271,11 +281,11 @@ private:
 		resultMessages.push_back(calcIdProtocol);
 
 		//Wysy³anie wyniku
-		sync_cout << "\nWysy³anie wyniku...\n";
+		std::cout << "\nWysy³anie wyniku...\n";
 		unsigned int sequenceNumber = resultMessages.size() - 1;
 		for (TextProtocol prot : resultMessages) {
 			prot.sequenceNumber = sequenceNumber;
-			sync_cout << "Wysy³anie (obliczenia): " << prot.to_string(prot.get_field()) << '\n';
+			std::cout << "Wysy³anie (obliczenia): " << prot.to_string(prot.get_field()) << '\n';
 			send_text_protocol(prot, prot.get_field());
 			sequenceNumber--;
 		}
@@ -316,7 +326,7 @@ private:
 				for (TextProtocol prot : sessionHistory) {
 					//Wys³anie komunikatu
 					prot.sequenceNumber = sequenceNumber;
-					sync_cout << prot.to_string(prot.get_field()) << '\n';
+					std::cout << prot.to_string(prot.get_field()) << '\n';
 
 					send_text_protocol(prot, prot.get_field());
 
@@ -331,7 +341,7 @@ private:
 		TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		statusProtocol.status = STATUS_HISTORY_EMPTY;
 		send_text_protocol(statusProtocol, statusProtocol.get_field());
-		sync_cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
+		std::cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
 	}
 
 	//Historia identyfikatorze obliczeñ
@@ -346,7 +356,7 @@ private:
 					TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
 					statusProtocol.status = STATUS_FORBIDDEN;
 					send_text_protocol(statusProtocol, statusProtocol.get_field());
-					sync_cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
+					std::cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
 					return;
 				}
 				else if (history[calcId].first == sessionId) {
@@ -364,7 +374,7 @@ private:
 
 					for (TextProtocol prot : history[calcId].second) {
 						prot.sequenceNumber = sequenceNumber;
-						sync_cout << "Wysy³anie (historia): " << prot.to_string(prot.get_field()) << '\n';
+						std::cout << "Wysy³anie (historia): " << prot.to_string(prot.get_field()) << '\n';
 						send_text_protocol(prot, prot.get_field());
 						sequenceNumber--;
 						if (sequenceNumber < 0) { break; }
@@ -377,7 +387,7 @@ private:
 		TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		statusProtocol.status = STATUS_NOT_FOUND;
 		send_text_protocol(statusProtocol, statusProtocol.get_field());
-		sync_cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
+		std::cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
 	}
 
 	//W tej funkcji znajduje siê pêtla sesji
@@ -385,55 +395,103 @@ private:
 		//Pêtla g³ówna sesji
 		while (true) {
 			std::string received;
-			if (receive_text_protocol(received)) {
-				TextProtocol operationProtocol(received);
+			receive_text_protocol(received);
+			TextProtocol operationProtocol(received);
 
-				if (operationProtocol.get_field() == FIELD_OPERATION) {
-					sync_cout << "Odbieranie (sesja): " << received << '\n';
-					//Operacje nie do obliczeñ -------------------------------------------------------------
+			if (operationProtocol.get_field() == FIELD_OPERATION) {
+				std::cout << "Odbieranie (sesja): " << received << '\n';
+				//Operacje nie do obliczeñ -------------------------------------------------------------
 
-					//Zakoñczenie
-					if (operationProtocol.operation == OP_END) { //Sprawdza czy klient chce sie rozl¹czyæ
-						return true;
-					}
-					else if (operationProtocol.operation == OP_BEGIN) {
-						return false;
-					}
-					//Wyœwietlenie ca³ej historii dla obecnej sesji
-					else if (operationProtocol.operation == OP_HISTORY_WHOLE) {
-						history_by_session_id(operationProtocol.sessionId);
-						continue;
-					}
-					//Wyœwietlenie historii dla podanego identyfikatora obliczeñ
-					else if (operationProtocol.operation == OP_HISTORY_ID) {
-						receive_text_protocol(received);
-						TextProtocol idProtocol(received);
-						history_by_calc_id(operationProtocol.sessionId, idProtocol.calculationId);
-						continue;
-					}
-
-					//Operacje do obliczeñ -----------------------------------------------------------------
-
-					//Wpisanie operacji do historii
-					history[calculationId].first = operationProtocol.sessionId;
-					history[calculationId].second.push_back(operationProtocol);
-
-					//Dodawanie
-					if (operationProtocol.operation == OP_ADD) { calculation(&add, operationProtocol.sessionId); }
-					//Odejmowanie
-					else if (operationProtocol.operation == OP_SUBT) { calculation(&subtract, operationProtocol.sessionId); }
-					//Mno¿enie
-					else if (operationProtocol.operation == OP_MULTP) { calculation(&multiply, operationProtocol.sessionId); }
-					//Dzielenie
-					else if (operationProtocol.operation == OP_DIV) { calculation(&divide, operationProtocol.sessionId); }
-					//Silnia
-					else if (operationProtocol.operation == OP_FACT) { calculation(&factorial, operationProtocol.sessionId); }
-
-					//Zwiêkszenie sessionId obliczeñ
-					calculationId++;
+				//Zakoñczenie
+				if (operationProtocol.operation == OP_END) {//sprawdza czy klient chce sie rozl¹czyæ
+					return true;
 				}
+				else if (operationProtocol.operation == OP_BEGIN) {
+					return false;
+				}
+				//Wyœwietlenie ca³ej historii dla obecnej sesji
+				else if (operationProtocol.operation == OP_HISTORY_WHOLE) {
+					history_by_session_id(operationProtocol.sessionId);
+					continue;
+				}
+				//Wyœwietlenie historii dla podanego identyfikatora obliczeñ
+				else if (operationProtocol.operation == OP_HISTORY_ID) {
+					receive_text_protocol(received);
+					TextProtocol idProtocol(received);
+					history_by_calc_id(operationProtocol.sessionId, idProtocol.calculationId);
+					continue;
+				}
+
+				//Operacje do obliczeñ -----------------------------------------------------------------
+
+				//Wpisanie operacji do historii
+				history[calculationId].first = operationProtocol.sessionId;
+				history[calculationId].second.push_back(operationProtocol);
+
+				//Dodawanie
+				if (operationProtocol.operation == OP_ADD) { calculation(&add, operationProtocol.sessionId); }
+				//Odejmowanie
+				else if (operationProtocol.operation == OP_SUBT) { calculation(&subtract, operationProtocol.sessionId); }
+				//Mno¿enie
+				else if (operationProtocol.operation == OP_MULTP) { calculation(&multiply, operationProtocol.sessionId); }
+				//Dzielenie
+				else if (operationProtocol.operation == OP_DIV) { calculation(&divide, operationProtocol.sessionId); }
+				//Silnia
+				else if (operationProtocol.operation == OP_FACT) { calculation(&factorial, operationProtocol.sessionId); }
+
+				//Zwiêkszenie sessionId obliczeñ
+				calculationId++;
 			}
 		}
 	}
 
+
+
+public:
+	//Konstruktor i destruktor
+	ServerUDP(const unsigned short& Port1) : NodeUDP(Port1), port(htons(Port1)) {
+		serverAddr.sin_family = AF_INET;
+		serverAddr.sin_port = htons(Port1);
+		serverAddr.sin_addr.s_addr = INADDR_ANY;
+		//Bindowanie gniazdka dla adresu odbierania
+		std::cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
+		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
+		if (iResult != 0) {
+			std::cout << "Bindowanie (inicjalizacja) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			return;
+		}
+
+		const int iTimeout = 5000;
+		setsockopt(nodeSocket,
+			SOL_SOCKET,
+			SO_RCVTIMEO,
+			reinterpret_cast<const char *>(&iTimeout),
+			sizeof(iTimeout));
+	};
+
+	//Rozpoczêcie sesji
+	bool start_session() {
+		//Czekanie na ¿¹danie rozpoczêcia sesji
+		bool sessionResult = false;
+		if (listen_for_client()) { sessionResult = session(); }
+
+		closesocket(nodeSocket);
+		nodeSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		serverAddr.sin_addr.s_addr = INADDR_ANY;
+		serverAddr.sin_port = port;
+		std::cout << "Bindowanie dla adresu: " << inet_ntoa(serverAddr.sin_addr) << " : " << serverAddr.sin_port << '\n';
+		Sleep(100);
+		const int iResult = bind(nodeSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr));
+
+		if (iResult != 0) {
+			std::cout << "Bindowanie (po sesji) niepowiod³o siê z b³êdem: " << WSAGetLastError() << "\n";
+			return false;
+		}
+		else {
+			std::cout << "Bindowanie (po sesji) powiod³o siê\n";
+		}
+
+		if (!sessionResult) { return false; }
+		else { return true; }
+	}
 };
