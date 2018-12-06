@@ -141,8 +141,12 @@ private:
 					sync_cout << "Odbieranie (potwierdzenie): " << received << '\n';
 					receivedProt = TextProtocol(received);
 					if (receivedProt.get_field() == FIELD_OPERATION && receivedProt.operation == OP_ACK) {
-						sync_cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
 						sessionIds.insert(sessionId);
+						std::cout << "U¿ywane identyfikatory sesji:\n";
+						for(const unsigned int& id : sessionIds){
+							std::cout << " - " << id << '\n';
+						}
+						sync_cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
 						return true;
 					}
 					else if (failCount == 10) {
