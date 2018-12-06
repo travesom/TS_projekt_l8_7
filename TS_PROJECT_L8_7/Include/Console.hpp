@@ -9,7 +9,7 @@
 /*
  * Kod bazowany na projekcie z JiPP (semestr 2, 2018):
  * https://github.com/Gunock/Console_RPG_Game
- * 
+ *
  * Plik: https://github.com/Gunock/Console_RPG_Game/blob/master/src/CManip.cpp
  */
 
@@ -34,7 +34,7 @@ private:
 		else if (c == 'Y' || c == 'y') { return false; }
 		return true;
 	}
-	
+
 	//--------------------------------------------------------------------------------------
 
 	//Wprowadzanie danych przez u¿ytkownika z ograniczeniem liczby znaków
@@ -71,9 +71,9 @@ private:
 	}
 
 	//Zamienia wszystkie litery string'a na du¿e
-	static void to_upper(std::string& str){
-		for(char& c : str){
-			if(c >= 97 && c <= 122){c -= 32;}
+	static void to_upper(std::string& str) {
+		for (char& c : str) {
+			if (c >= 97 && c <= 122) { c -= 32; }
 		}
 	}
 
@@ -133,6 +133,15 @@ public:
 	}
 	static const bool check_escape() {
 		return GetAsyncKeyState(VK_ESCAPE) & 0x8000;
+	}
+	static const bool check_shift() {
+		return GetAsyncKeyState(VK_SHIFT) & 0x8000;
+	}
+	static const bool check_ctrl() {
+		return GetAsyncKeyState(VK_CONTROL) & 0x8000;
+	}
+	static const bool check_tilde() {
+		return GetAsyncKeyState(VK_OEM_3) & 0x8000;
 	}
 	//Na direction podajemy kierunek strza³ki
 	static const bool check_arrow(std::string direction) {
@@ -258,12 +267,13 @@ public:
 					else if (str[0] == '-' && str.size() == 1) { cursor_move(-1, 0); }
 					str.pop_back();
 				}
+				continue;
 			}
 			else if (str.length() == 1 && str[0] == '-' && c == '0') { cursor_move(-1, 0); continue; }
 			else if (!str.empty()) { if (str.size() == 1 && str[0] == '0') { continue; } }
-			
+
 			if (str.empty() && c == '-') { cursor_move(1, 0); str += c; }
-			else if (check_other_than_num(c)) { continue; }
+			else if (check_other_than_num(c)) { cursor_move(-1, 0); continue; }
 			else if (c >= '0' && c <= '9') {
 				if (str.size() < limit) {
 					cursor_move(1, 0);

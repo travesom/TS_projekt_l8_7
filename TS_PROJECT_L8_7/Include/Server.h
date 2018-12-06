@@ -31,6 +31,7 @@ private:
 public:
 	//Konstruktor
 	explicit ServerUDP(const unsigned short& Port1) : NodeUDP(Port1), port(htons(Port1)) {
+		messages = false;
 		serverAddr.sin_family = AF_INET;
 		bind_to_address("0.0.0.0");
 		set_receive_timeout(recvTimeout);
@@ -122,13 +123,14 @@ private:
 			}
 
 
-			//Wys³anie identyfikatora sesji ( czêœæ jest w pêtli)
+			//Wys³anie identyfikatora sesji (czêœæ jest w pêtli)
 			TextProtocol idProtocol(GET_CURRENT_TIME(), sessionId, 0);
 			idProtocol.operation = OP_ID_SESSION;
 
 			//Odbieranie potwierdzenia od klienta
 			failCount = 0;
 			while (receivedProt.operation != OP_ACK) {
+				Sleep(200);
 				send_text_protocol(idProtocol, FIELD_OPERATION);
 
 				sync_cout << "Wysy³anie (id): " << idProtocol.to_string(idProtocol.get_field()) << '\n';
@@ -197,7 +199,7 @@ private:
 		return true;
 	}
 
-	//Silnia
+	//Silnia (argument drugi obecny, aby mo¿na przekazaæ wskaŸnik tej funkcji)
 	static bool factorial(const double& argument1, const double& argument2, double& result) {
 		//Silnia dla zero
 		if (argument1 == 0) { result = 1; return true; }

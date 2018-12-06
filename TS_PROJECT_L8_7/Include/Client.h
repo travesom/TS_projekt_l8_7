@@ -88,6 +88,7 @@ private:
 				send_text_protocol_to(addressProtocol, addressProtocol.get_field(), address);
 			}
 		};
+		//Wykonanie powy¿szego wysy³ania
 		send_op_begin();
 
 		//Otrzymywanie odpowiedzi na ¿¹danie rozpoczêcia sesji
@@ -463,7 +464,6 @@ private:
 		send_text_protocol(histProtocol, FIELD_OPERATION);
 
 		std::vector<TextProtocol> history;
-		byte failCount = 0;
 		while (true) {
 			std::string received;
 			if (receive_text_protocol(received)) {
@@ -475,8 +475,6 @@ private:
 					if (receivedProtocol.sequenceNumber == 0 && receivedProtocol.sessionId != 0) { break; }
 				}
 			}
-			else { failCount++; }
-			if (failCount == 10) { break; }
 		}
 
 
@@ -579,7 +577,6 @@ private:
 		send_text_protocol(histProtocol, FIELD_CALCULATION_ID);
 
 		std::vector<TextProtocol>history;
-		byte failCount = 0;
 		while (true) {
 			std::string received;
 			if (receive_text_protocol(received)) {
@@ -590,8 +587,6 @@ private:
 					if (receivedProtocol.sequenceNumber == 0 && receivedProtocol.sessionId != 0) { break; }
 				}
 			}
-			else { failCount++; }
-			if (failCount == 10) { break; }
 		}
 
 		print_message_sequence(history);

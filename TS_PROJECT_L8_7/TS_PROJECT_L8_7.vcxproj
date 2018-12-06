@@ -168,7 +168,7 @@
     <ClCompile Include="Client_Instance.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Client.h" />
+    <ClInclude Include="Include\Client.h" />
     <ClInclude Include="Include\Console.hpp" />
     <ClInclude Include="Include\Defines.h" />
     <ClInclude Include="Include\Node.h" />

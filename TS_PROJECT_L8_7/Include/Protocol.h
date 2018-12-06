@@ -4,7 +4,8 @@
 #include <iomanip>
 
 inline std::ostream& operator << (std::ostream& os, const tm& time) {
-	os << std::setfill('0') << std::setw(2) << time.tm_hour << ':' << std::setfill('0') << std::setw(2) << time.tm_min << ':' << std::setfill('0') << std::setw(2) << time.tm_sec;
+	os << std::setfill('0') << std::setw(2) << time.tm_mday << '.' << std::setfill('0') << std::setw(2) << time.tm_mon << '.' << std::setfill('0') << std::setw(4) << time.tm_year << '.'
+		<< std::setfill('0') << std::setw(2) << time.tm_hour << ':' << std::setfill('0') << std::setw(2) << time.tm_min << ':' << std::setfill('0') << std::setw(2) << time.tm_sec;
 	return os;
 }
 
@@ -35,8 +36,8 @@ inline void double_remove_end_zero(std::string& numberStr) {
 
 class TextProtocol {
 public:
-	tm  time;   //znacznik czasowy
-	unsigned int sessionId;             //Identyfikator sesji
+	tm  time;                    //znacznik czasowy
+	unsigned int sessionId;      //Identyfikator sesji
 	unsigned int sequenceNumber; //Numer sekwencyjny (pole obowi¹zkowe)
 
 	std::string operation;      //Pole operacji
@@ -48,14 +49,17 @@ public:
 	//Konstruktor domyœlny
 	TextProtocol() : time(), sessionId(NULL), sequenceNumber(NULL), operation(""), status(""), number(NAN), calculationId(NULL) {};
 
+	//Konstruktor przyjmuj¹cy wartoœci dla pól obowi¹zkowych
 	TextProtocol(const tm& time_, const unsigned int& id_, const unsigned int& sequenceNumber_) : TextProtocol() {
 		time = time_;
 		sessionId = id_;
 		sequenceNumber = sequenceNumber_;
 	}
 
+	//Konstruktor przyjmuj¹cy komunikat w formie ci¹gu znaku
 	explicit TextProtocol(const std::string& data) { from_string(data); }
 
+	//Destruktor
 	virtual ~TextProtocol() = default;
 
 	//Serializacja
@@ -117,14 +121,40 @@ public:
 			{
 				//Godziny
 				temp.clear();
-				for (auto i = iterator + HEAD_TIME.length(); i <= iterator + HEAD_TIME.length() + 1; i++) {
+				for (auto i = iterator + HEAD_TIME.length(); i < data.size(); i++) {
+					if (data[i] == '.') { break; }
+					temp += data[i];
+				}
+				time.tm_mday = std::stoi(temp);
+
+				//Godziny
+				temp.clear();
+				for (auto i = iterator + HEAD_TIME.length()+3; i < data.size(); i++) {
+					if (data[i] == '.') { break; }
+					temp += data[i];
+				}
+				time.tm_mon = std::stoi(temp);
+
+				//Godziny
+				temp.clear();
+				for (auto i = iterator + HEAD_TIME.length()+6; i < data.size(); i++) {
+					if (data[i] == '.') { break; }
+					temp += data[i];
+				}
+				time.tm_year = std::stoi(temp);
+
+				//Godziny
+				temp.clear();
+				for (auto i = iterator + HEAD_TIME.length()+11; i < data.size(); i++) {
+					if (data[i] == ':') { break; }
 					temp += data[i];
 				}
 				time.tm_hour = std::stoi(temp);
 
 				//Minuty
 				temp.clear();
-				for (auto i = iterator + HEAD_TIME.length() + 3; i <= iterator + HEAD_TIME.length() + 4; i++) {
+				for (auto i = iterator + HEAD_TIME.length() + 14; i < data.size(); i++) {
+					if (data[i] == ':') { break; }
 					temp += data[i];
 				}
 				time.tm_min = std::stoi(temp);
@@ -132,7 +162,8 @@ public:
 
 				//Sekundy
 				temp.clear();
-				for (auto i = iterator + HEAD_TIME.length() + 6; i <= iterator + HEAD_TIME.length() + 7; i++) {
+				for (auto i = iterator + HEAD_TIME.length() + 17; i < data.size(); i++) {
+					if (data[i] == ' ') { break; }
 					temp += data[i];
 				}
 				time.tm_sec = std::stoi(temp);
