@@ -77,6 +77,7 @@ private:
 
 	//Przyjmowanie zg³oszenia
 	bool listen_for_client() {
+		unsigned int sessionId = 0;
 		std::string received;
 		TextProtocol receivedProt;
 
@@ -112,14 +113,13 @@ private:
 
 		if (failCount < 11) {
 			//Wybieranie sessionId sesji
-			unsigned int sessionId = receivedProt.sessionId;
+			if (sessionId == 0) { sessionId = receivedProt.sessionId; }
 			//Jeœli klient nie ma identyfikatora sesji (na serwerze)
-			if (sessionIds.find(sessionId) == sessionIds.end()) {
+			if (sessionIds.find(sessionId) == sessionIds.end() && sessionId == 0) {
 				while (true) {
 					sessionId = randInt(1, 99);
 					if (sessionIds.find(sessionId) == sessionIds.end()) { break; }
 				}
-				sessionIds.insert(sessionId);
 			}
 
 
@@ -140,6 +140,7 @@ private:
 					receivedProt = TextProtocol(received);
 					if (receivedProt.get_field() == FIELD_OPERATION && receivedProt.operation == OP_ACK) {
 						sync_cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
+						sessionIds.insert(sessionId);
 						return true;
 					}
 					else if (failCount == 10) {
