@@ -400,6 +400,7 @@ private:
 		//Pêtla g³ówna sesji
 		while (true) {
 			std::string received;
+			receive_text_protocol(received); //Komunikat z pustym statusem
 			if (receive_text_protocol(received)) {
 				TextProtocol operationProtocol(received);
 
