@@ -125,13 +125,19 @@ private:
 			}
 
 
-			//Wys³anie identyfikatora sesji (czêœæ jest w pêtli)
-			TextProtocol idProtocol(GET_CURRENT_TIME(), sessionId, 0);
-			idProtocol.operation = OP_ID_SESSION;
+
 
 			//Odbieranie potwierdzenia od klienta
 			failCount = 0;
 			while (receivedProt.operation != OP_ACK) {
+				Sleep(200);
+				//Wys³anie pola operacja
+				TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 1);
+				send_text_protocol(statusProtocol, FIELD_STATUS);
+
+				//Wys³anie identyfikatora sesji (czêœæ jest w pêtli)
+				TextProtocol idProtocol(GET_CURRENT_TIME(), sessionId, 0);
+				idProtocol.operation = OP_ID_SESSION;
 				Sleep(200);
 				send_text_protocol(idProtocol, FIELD_OPERATION);
 

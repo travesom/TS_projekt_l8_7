@@ -81,11 +81,15 @@ private:
 		const auto send_op_begin = [this]() {
 			for (const std::string& address : GET_IP_TABLE()) {
 				//Wys³anie pola operacja
+				TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 2);
+				send_text_protocol_to(statusProtocol, FIELD_STATUS, address);
+
+				//Wys³anie pola operacja
 				TextProtocol operationProtocol(GET_CURRENT_TIME(), sessionId, 1);
 				operationProtocol.operation = OP_BEGIN;
 				send_text_protocol_to(operationProtocol, operationProtocol.get_field(), address);
 
-				//Wys³¹nie adresu serwera
+				//Wys³anie adresu serwera
 				TextProtocol addressProtocol(GET_CURRENT_TIME(), sessionId, 0);
 				addressProtocol.address = address;
 				send_text_protocol_to(addressProtocol, addressProtocol.get_field(), address);
@@ -121,6 +125,10 @@ private:
 		}
 
 		if (findSuccess) {
+			//Wys³anie pola operacja
+			TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 1);
+			send_text_protocol(statusProtocol, FIELD_STATUS);
+
 			//Wys³anie potwierdzenia
 			TextProtocol ackProtocol(GET_CURRENT_TIME(), sessionId, 0);
 			ackProtocol.operation = OP_ACK;
@@ -302,7 +310,12 @@ private:
 		unsigned int argNum = 0;
 		for (const std::string& arg : args) { if (!arg.empty()) { argNum++; } }
 
-		unsigned int sequenceNumber = argNum;
+		unsigned int sequenceNumber = argNum + 1;
+
+		//Wys³anie pola operacja
+		TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, sequenceNumber);
+		send_text_protocol(statusProtocol, FIELD_STATUS);
+		sequenceNumber--;
 
 		//Wys³anie komunikatuu z operacj¹
 		TextProtocol calcProtocol(GET_CURRENT_TIME(), sessionId, sequenceNumber);
@@ -460,6 +473,10 @@ private:
 
 	//Historia (dla identyfikatora sesji)
 	void history_by_session_id() {
+		//Wys³anie pola operacja
+		TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 1);
+		send_text_protocol(statusProtocol, FIELD_STATUS);
+
 		TextProtocol histProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		histProtocol.operation = OP_HISTORY_WHOLE;
 		send_text_protocol(histProtocol, FIELD_OPERATION);
@@ -569,6 +586,10 @@ private:
 		std::string calcId;
 		arg_input_one_uint(calcId);
 
+		//Wys³anie pola operacja
+		TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 2);
+		send_text_protocol(statusProtocol, FIELD_STATUS);
+
 		TextProtocol histProtocol(GET_CURRENT_TIME(), sessionId, 1);
 		histProtocol.operation = OP_HISTORY_ID;
 		send_text_protocol(histProtocol, FIELD_OPERATION);
@@ -614,6 +635,10 @@ private:
 
 			//Zakoñczenie sesji
 			if (choice == 1) {
+				//Wys³anie pola operacja
+				TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 1);
+				send_text_protocol(statusProtocol, FIELD_STATUS);
+
 				TextProtocol protocol(GET_CURRENT_TIME(), sessionId, 0);
 				protocol.operation = OP_END;
 				send_text_protocol(protocol, FIELD_OPERATION);
