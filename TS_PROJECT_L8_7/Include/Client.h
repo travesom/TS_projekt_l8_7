@@ -53,18 +53,13 @@ private:
 			std::chrono::duration<double> time = std::chrono::system_clock::now() - timeStart;
 			if (time >= std::chrono::duration<double>(0.5)) {
 				dotNumber++;
-				if (dotNumber > 3) {
-					dotNumber = 0;
-					dotsText.clear();
-				}
+				if (dotNumber > 3) { dotNumber = 0; dotsText.clear(); }
 				else { dotsText += ". "; }
 				CONSOLE_MANIP::print_text(3, 2, searchingText + "                  ");
 				CONSOLE_MANIP::print_text(3, 2, searchingText + dotsText);
 				timeStart = std::chrono::system_clock::now();
 			}
-			if (stop) {
-				return;
-			}
+			if (stop) { return; }
 		}
 	}
 
@@ -139,88 +134,15 @@ private:
 	//Funkcje wprowadzania danych ----------------------------------------------------------
 
 	//Wpisywanie 2 argumentów (u¿yte dla dodawania, odejmowania i mno¿enia)
-	static void arg_input_two_add(std::array<std::string, 2>& args) {
+	static void arg_input_two(std::array<std::string, 2>& args, const std::string& calcSign) {
 		unsigned int argNum = 0;
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 		while (true) {
 			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " + " + args[1] : "");
+			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? calcSign + args[1] : "");
 			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
 			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
-			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
-				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
-				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                     ");
-				CONSOLE_MANIP::cursor_set_pos(cursorPos);
-				if (argNum == 1) { break; }
-				argNum++;
-			}
-			else {
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				sync_cout << "Liczba poza zakresem!";
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
-			}
-		}
-	}
-
-	//Wpisywanie 2 argumentów (u¿yte dla dodawania, odejmowania i mno¿enia)
-	static void arg_input_two_subt(std::array<std::string, 2>& args) {
-		unsigned int argNum = 0;
-		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-		while (true) {
-			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " - " + args[1] : "");
-			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
-			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
-			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
-				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
-				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                     ");
-				CONSOLE_MANIP::cursor_set_pos(cursorPos);
-				if (argNum == 1) { break; }
-				argNum++;
-			}
-			else {
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				sync_cout << "Liczba poza zakresem!";
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
-			}
-		}
-	}
-
-	//Wpisywanie 2 argumentów (u¿yte dla dodawania, odejmowania i mno¿enia)
-	static void arg_input_two_multp(std::array<std::string, 2>& args) {
-		unsigned int argNum = 0;
-		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-		while (true) {
-			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " * " + args[1] : "");
-			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
-			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
-			if (stod(args[argNum]) < 2147483647 && stod(args[argNum]) > -2147483647) {
-				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
-				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "                     ");
-				CONSOLE_MANIP::cursor_set_pos(cursorPos);
-				if (argNum == 1) { break; }
-				argNum++;
-			}
-			else {
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				sync_cout << "Liczba poza zakresem!";
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
-			}
-		}
-	}
-
-	//Wpisywanie 2 argumentów dla dzielenia
-	static void arg_input_two_div(std::array<std::string, 2>& args) {
-		unsigned int argNum = 0;
-		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
-		while (true) {
-			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
-			sync_cout << "Podaj równanie: " << args[0] << (argNum == 1 ? " / " + args[1] : "");
-			if (argNum == 0) { CONSOLE_MANIP::input_string_int_number(args[argNum], 10); }
-			else if (argNum == 1) { CONSOLE_MANIP::input_string_int_number_brackets(args[argNum], 10); }
-
-			if (argNum == 1 && stod(args[argNum]) == 0) {
+			if (calcSign == " / " && argNum == 1 && stod(args[argNum]) == 0) {
 				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
 				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "Dzielnik nie mo¿e byæ zerem!");
 				CONSOLE_MANIP::cursor_set_pos(cursorPos);
@@ -234,15 +156,15 @@ private:
 				argNum++;
 			}
 			else {
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-				sync_cout << "Liczba poza zakresem!";
-				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y - 1);
+				const COORD cursorPos = CONSOLE_MANIP::cursor_get_pos();
+				CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "Liczba poza zakresem!");
+				CONSOLE_MANIP::cursor_set_pos(cursorPos);
 			}
 		}
 	}
 
 	//Wpisywanie argumentu dla silni
-	static void arg_input_one_uint_fact(std::array<std::string, 2>& args) {
+	static void arg_input_one_uint_fact(std::array<std::string, 2>& args, const std::string& calcSign) {
 		CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 2);
 		while (true) {
 			CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y);
@@ -254,7 +176,7 @@ private:
 				CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 				sync_cout << "                     ";
 				CONSOLE_MANIP::cursor_set_pos(currentXpos, CONSOLE_MANIP::cursor_get_pos().Y - 1);
-				sync_cout << '!';
+				sync_cout << calcSign;
 				break;
 			}
 			else {
@@ -293,11 +215,11 @@ private:
 
 
 	//Wysy³anie ¿¹dania obliczenia (zale¿ne od podanej funkcji)
-	void calculation(void(*argInputFunc)(std::array<std::string, 2>&), const std::string& operation) {
+	void calculation(void(*argInputFunc)(std::array<std::string, 2>&, const std::string&), const std::string& operation, const std::string& calcSign) {
 		//Podawanie argumentów
 		std::array<std::string, 2> args{ "","" };
 
-		argInputFunc(args);
+		argInputFunc(args, calcSign);
 
 		unsigned int argNum = 0;
 		for (const std::string& arg : args) { if (!arg.empty()) { argNum++; } }
@@ -511,18 +433,15 @@ private:
 						argNum = 1;
 					}
 					else if (prot.status == STATUS_FORBIDDEN) {
-						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						sync_cout << "Odmowa dostêpu!";
+						CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "Odmowa dostêpu!");
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 					}
 					else if (prot.status == STATUS_HISTORY_EMPTY) {
-						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						sync_cout << "Historia pusta!";
+						CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "Historia pusta!");
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 					}
 					else if (prot.status == STATUS_NOT_FOUND) {
-						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-						sync_cout << "Nie znaleziono!";
+						CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, "Nie znaleziono!");
 						CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
 					}
 					else if (prot.status == STATUS_SUCCESS) { sync_cout << " = "; }
@@ -539,8 +458,7 @@ private:
 					std::string numberStr = std::to_string(prot.number);
 					double_remove_end_zero(numberStr);
 
-					CONSOLE_MANIP::cursor_set_pos(2, CONSOLE_MANIP::cursor_get_pos().Y + 1);
-					sync_cout << numberStr << calcSign;
+					CONSOLE_MANIP::print_text(2, CONSOLE_MANIP::cursor_get_pos().Y + 1, numberStr + calcSign);
 					argNum++;
 					if (isFactorial) { argNum++; isFactorial = false; }
 				}
@@ -660,7 +578,7 @@ private:
 			CONSOLE_MANIP::print_text(2, 6, history);
 
 			//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
-			// jego akcja nie zosta³a wielokrotnie wykonana
+			//aby jego akcja nie zosta³a wielokrotnie wykonana
 			CONSOLE_MANIP::clear_console_input_buffer();
 
 			//Sprawdzanie naciœniêtych klawiszy
@@ -712,7 +630,7 @@ private:
 				CONSOLE_MANIP::print_text(2, 9, factorialText);
 
 				//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
-				// jego akcja nie zosta³a wielokrotnie wykonana
+				//aby jego akcja nie zosta³a wielokrotnie wykonana
 				CONSOLE_MANIP::clear_console_input_buffer();
 
 				//Sprawdzanie naciœniêtych klawiszy
@@ -727,25 +645,15 @@ private:
 			//Powrót
 			if (choice == 1) { break; }
 			//Dodawanie
-			else if (choice == 2) {
-				calculation(&arg_input_two_add, OP_ADD);
-			}
+			else if (choice == 2) { calculation(&arg_input_two, OP_ADD, " + "); }
 			//Odejmowanie
-			else if (choice == 3) {
-				calculation(&arg_input_two_subt, OP_SUBT);
-			}
+			else if (choice == 3) { calculation(&arg_input_two, OP_SUBT, " - "); }
 			//Mno¿enie
-			else if (choice == 4) {
-				calculation(&arg_input_two_multp, OP_MULTP);
-			}
+			else if (choice == 4) { calculation(&arg_input_two, OP_MULTP, " * "); }
 			//Dzielenie
-			else if (choice == 5) {
-				calculation(&arg_input_two_div, OP_DIV);
-			}
+			else if (choice == 5) { calculation(&arg_input_two, OP_DIV, " / "); }
 			//Silnia
-			else if (choice == 6) {
-				calculation(&arg_input_one_uint_fact, OP_FACT);
-			}
+			else if (choice == 6) { calculation(&arg_input_one_uint_fact, OP_FACT, "!"); }
 		}
 	}
 
@@ -779,7 +687,7 @@ private:
 				CONSOLE_MANIP::print_text(2, 6, byCalcId);
 
 				//Czyszczynie bufora wejœcia, aby po wduszeniu przycisku,
-				// jego akcja nie zosta³a wielokrotnie wykonana
+				//aby jego akcja nie zosta³a wielokrotnie wykonana
 				CONSOLE_MANIP::clear_console_input_buffer();
 
 				//Sprawdzanie naciœniêtych klawiszy
@@ -794,13 +702,9 @@ private:
 			//Powrót
 			if (choice == 1) { break; }
 			//Ca³a historia
-			else if (choice == 2) {
-				history_by_session_id();
-			}
+			else if (choice == 2) { history_by_session_id(); }
 			//Po identyfikatorze obliczeñ
-			else if (choice == 3) {
-				history_by_calc_id();
-			}
+			else if (choice == 3) { history_by_calc_id(); }
 		}
 	}
 
