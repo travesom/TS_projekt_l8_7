@@ -24,8 +24,8 @@ private:
 	*/
 	std::map<unsigned int, std::pair<unsigned int, std::vector<TextProtocol>>> history;
 	std::set<unsigned int>sessionIds; //Zbiór u¿ywanych identyfikatorów sesji
-	const unsigned short port;        //Port (zmienna u¿ywania przy bindowaniu dla pêtli lokalnej)
-	sockaddr_in serverAddr{};         //Adress serwera (u¿ywany przy bindowaniu)
+	const unsigned short port; //Port (zmienna u¿ywania przy bindowaniu dla pêtli lokalnej)
+	sockaddr_in serverAddr{}; //Adress serwera (u¿ywany przy bindowaniu)
 
 
 public:
@@ -143,7 +143,7 @@ private:
 					if (receivedProt.get_field() == FIELD_OPERATION && receivedProt.operation == OP_ACK) {
 						sessionIds.insert(sessionId);
 						std::cout << "U¿ywane identyfikatory sesji:\n";
-						for (const unsigned int& id : sessionIds) {
+						for(const unsigned int& id : sessionIds){
 							std::cout << " - " << id << '\n';
 						}
 						sync_cout << "Rozpoczynanie sesji zakoñczone powodzeniem.\n\n";
@@ -190,7 +190,9 @@ private:
 		double tempResult = 0;
 		for (int i = abs(int(argument2)); i > 0; i--) {
 			tempResult += argument1;
-			if (tempResult >= 2147483647.0 || tempResult <= -2147483647.0) { return false; }
+			if (tempResult >= 2147483647.0 || tempResult <= -2147483647.0) {
+				return false;
+			}
 		}
 		result = argument1 * argument2;
 		return true;
@@ -200,6 +202,7 @@ private:
 	static bool divide(const double& argument1, const double& argument2, double& result) {
 		result = double(argument1) / double(argument2);
 		result = round(result * 10000) / 10000;
+
 		return true;
 	}
 
@@ -211,6 +214,7 @@ private:
 		double temp = 1;
 		for (unsigned int i = 1; i <= argument1; i++) {
 			temp = temp * i;
+			//Jeœli liczba poza zakresem
 			if (temp > 4294967295.0) { return false; }
 		}
 		result = unsigned int(temp);
@@ -238,39 +242,41 @@ private:
 
 		//Kontener na komunikaty dotycz¹ce wyniku obliczeñ
 		std::vector<TextProtocol> resultMessages;
-		auto add_to_history_and_result = [this, &resultMessages](const TextProtocol& resultMessage) {
-			history[calculationId].second.push_back(resultMessage);
-			resultMessages.push_back(resultMessage);
-		};
 
 		//Dodanie operacji WYNIK do historii i do komunikatów do odes³ania
 		TextProtocol resultMessage(GET_CURRENT_TIME(), sessionId, 0);
 		resultMessage.operation = OP_STATUS;
-		add_to_history_and_result(resultMessage);
+		history[calculationId].second.push_back(resultMessage);
+		resultMessages.push_back(resultMessage);
 
 		//Jeœli obliczenie siê nie powiedzie
 		if (!calc_function(args[0], args[1], result)) {
 			//Dodanie statusu do historii i do komunikatów do odes³ania
 			TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
 			statusProtocol.status = STATUS_OUT_OF_RANGE;
-			add_to_history_and_result(statusProtocol);
+			history[calculationId].second.push_back(statusProtocol);
+			resultMessages.push_back(statusProtocol);
 		}
 		//Jeœli obliczenie siê powiedzie
 		else {
 			//Dodanie statusu do historii i do komunikatów do odes³ania
 			TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
 			statusProtocol.status = STATUS_SUCCESS;
-			add_to_history_and_result(statusProtocol);
+			history[calculationId].second.push_back(statusProtocol);
+			resultMessages.push_back(statusProtocol);
 
 			//Dodanie wyniku do historii i do komunikatów do odes³ania
 			TextProtocol resultProtocol(GET_CURRENT_TIME(), sessionId, 0);
 			resultProtocol.number = result;
-			add_to_history_and_result(resultProtocol);
+			history[calculationId].second.push_back(resultProtocol);
+			resultMessages.push_back(resultProtocol);
 		}
 
 		//Dodanie identyfikatora obliczeñ do historii i do komunikatów do odes³ania
 		TextProtocol calcIdProtocol(GET_CURRENT_TIME(), sessionId, 0);
 		calcIdProtocol.calculationId = calculationId;
+		//Dodanie do historii u³atwia póŸniej wysy³anie historii
+		history[calculationId].second.push_back(calcIdProtocol);
 		resultMessages.push_back(calcIdProtocol);
 
 		//Wysy³anie wyniku
@@ -339,29 +345,31 @@ private:
 
 	//Historia identyfikatorze obliczeñ
 	void history_by_calc_id(const unsigned int& sessionId, const unsigned int& calcId) {
-		auto send_status = [this, &sessionId](const std::string& status, int& sequenceNumber) {
-			TextProtocol operationProtocol(GET_CURRENT_TIME(), sessionId, sequenceNumber);
-			operationProtocol.operation = OP_STATUS;
-			send_text_protocol(operationProtocol, operationProtocol.get_field());
-			sequenceNumber--;
-
-			TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, sequenceNumber);
-			statusProtocol.status = status;
-			send_text_protocol(statusProtocol, statusProtocol.get_field());
-			sequenceNumber--;
-			sync_cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
-		};
-
-		int sequenceNumber = 1;
 		if (!history.empty()) {
 			if (history.find(calcId) != history.end()) {
 				if (history[calcId].first != sessionId) {
-					send_status(STATUS_FORBIDDEN, sequenceNumber);
+					TextProtocol operationProtocol(GET_CURRENT_TIME(), sessionId, 1);
+					operationProtocol.operation = OP_STATUS;
+					send_text_protocol(operationProtocol, operationProtocol.get_field());
+
+					TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
+					statusProtocol.status = STATUS_FORBIDDEN;
+					send_text_protocol(statusProtocol, statusProtocol.get_field());
+					sync_cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
 					return;
 				}
 				else if (history[calcId].first == sessionId) {
-					sequenceNumber = history[calcId].second.size() + 1;
-					send_status(STATUS_FOUND, sequenceNumber);
+					int sequenceNumber = history[calcId].second.size() + 1;
+
+					TextProtocol operationProtocol(GET_CURRENT_TIME(), sessionId, sequenceNumber);
+					operationProtocol.operation = OP_STATUS;
+					send_text_protocol(operationProtocol, operationProtocol.get_field());
+					sequenceNumber--;
+
+					TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, sequenceNumber);
+					statusProtocol.status = STATUS_FOUND;
+					send_text_protocol(statusProtocol, statusProtocol.get_field());
+					sequenceNumber--;
 
 					for (TextProtocol prot : history[calcId].second) {
 						prot.sequenceNumber = sequenceNumber;
@@ -374,7 +382,11 @@ private:
 				}
 			}
 		}
-		send_status(STATUS_NOT_FOUND, sequenceNumber);
+
+		TextProtocol statusProtocol(GET_CURRENT_TIME(), sessionId, 0);
+		statusProtocol.status = STATUS_NOT_FOUND;
+		send_text_protocol(statusProtocol, statusProtocol.get_field());
+		sync_cout << "Wysy³anie (historia): " << statusProtocol.to_string(statusProtocol.get_field()) << '\n';
 	}
 
 	//W tej funkcji znajduje siê pêtla sesji
