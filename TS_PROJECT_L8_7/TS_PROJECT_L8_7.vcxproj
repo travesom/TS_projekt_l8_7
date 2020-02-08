@@ -23,33 +23,33 @@
     <ProjectGuid>{3613A380-FDC9-4531-985B-4920C39300BB}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>TSPROJECTL87</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>Client_Instance</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -114,11 +114,15 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -165,15 +169,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Client_Instance.cpp" />
+    <ClCompile Include="client_gui.cpp" />
+    <ClCompile Include="client_main.cpp" />
+    <ClCompile Include="Source\console_manip.cpp" />
+    <ClCompile Include="Source\sync_cout.cpp" />
+    <ClCompile Include="Source\text_protocol.cpp" />
+    <ClCompile Include="Source\calculator_client.cpp" />
+    <ClCompile Include="Source\udp_node.cpp" />
+    <ClCompile Include="Source\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\Client.h" />
-    <ClInclude Include="Include\Console.hpp" />
-    <ClInclude Include="Include\Defines.h" />
-    <ClInclude Include="Include\Node.h" />
-    <ClInclude Include="Include\Protocol.h" />
-    <ClInclude Include="Include\ThreadSafe.hpp" />
+    <ClInclude Include="client_gui.hpp" />
+    <ClInclude Include="Include\console_manip.hpp" />
+    <ClInclude Include="Include\calculator_client.hpp" />
+    <ClInclude Include="Include\text_protocol.hpp" />
+    <ClInclude Include="Include\sync_cout.hpp" />
+    <ClInclude Include="Include\udp_node.hpp" />
+    <ClInclude Include="Include\utils.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

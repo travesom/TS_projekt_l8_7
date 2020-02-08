@@ -23,32 +23,32 @@
     <ProjectGuid>{0A6330B9-CF8E-4267-9655-114C1138326D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ServerInstance</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -113,11 +113,15 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -164,15 +168,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Server_Instance.cpp" />
+    <ClCompile Include="..\TS_PROJECT_L8_7\Source\console_manip.cpp" />
+    <ClCompile Include="..\TS_PROJECT_L8_7\Source\sync_cout.cpp" />
+    <ClCompile Include="..\TS_PROJECT_L8_7\Source\text_protocol.cpp" />
+    <ClCompile Include="..\TS_PROJECT_L8_7\Source\udp_node.cpp" />
+    <ClCompile Include="..\TS_PROJECT_L8_7\Source\calculator_server.cpp" />
+    <ClCompile Include="..\TS_PROJECT_L8_7\Source\utils.cpp" />
+    <ClCompile Include="server_main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\TS_PROJECT_L8_7\Include\Console.hpp" />
-    <ClInclude Include="..\TS_PROJECT_L8_7\Include\Defines.h" />
-    <ClInclude Include="..\TS_PROJECT_L8_7\Include\Node.h" />
-    <ClInclude Include="..\TS_PROJECT_L8_7\Include\Protocol.h" />
-    <ClInclude Include="..\TS_PROJECT_L8_7\Include\Server.h" />
-    <ClInclude Include="..\TS_PROJECT_L8_7\Include\ThreadSafe.hpp" />
+    <ClInclude Include="..\TS_PROJECT_L8_7\Include\console_manip.hpp" />
+    <ClInclude Include="..\TS_PROJECT_L8_7\Include\text_protocol.hpp" />
+    <ClInclude Include="..\TS_PROJECT_L8_7\Include\calculator_server.hpp" />
+    <ClInclude Include="..\TS_PROJECT_L8_7\Include\sync_cout.hpp" />
+    <ClInclude Include="..\TS_PROJECT_L8_7\Include\udp_node.hpp" />
+    <ClInclude Include="..\TS_PROJECT_L8_7\Include\utils.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
