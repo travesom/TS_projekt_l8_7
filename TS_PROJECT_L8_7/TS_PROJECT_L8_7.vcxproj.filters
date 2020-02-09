@@ -30,10 +30,10 @@
     <ClInclude Include="Include\console_manip.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="client_gui.hpp">
+    <ClInclude Include="Include\calculator_client.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Include\calculator_client.hpp">
+    <ClInclude Include="Include\client_gui.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -53,13 +53,13 @@
     <ClCompile Include="Source\console_manip.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="client_main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="client_gui.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\calculator_client.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\client_gui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\client_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
