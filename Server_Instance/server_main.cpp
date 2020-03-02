@@ -6,7 +6,7 @@ int main()
 {
 	console_manip::clear_console();
 
-	udp_server server(27272);
+	calculator_server server(27272);
 	while (true)
 	{
 		if (!server.start_session()) { continue; }

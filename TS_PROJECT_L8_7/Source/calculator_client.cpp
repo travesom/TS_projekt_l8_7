@@ -4,20 +4,20 @@
 
 using namespace std;
 
-udp_client::udp_client() : udp_node()
+calculator_client::calculator_client() : udp_node()
 {
 }
 
-udp_client::udp_client(const string& address, const unsigned short& port): udp_node(address, port)
+calculator_client::calculator_client(const string& address, const unsigned short& port): udp_node(address, port)
 {
 	print_messages_ = false;
 	print_errors_ = false;
 	set_receive_timeout(recv_timeout);
 }
 
-udp_client::~udp_client() = default;
+calculator_client::~calculator_client() = default;
 
-bool udp_client::find_server()
+bool calculator_client::find_server()
 {
 	string address = "127.0.0.1";
 
@@ -51,12 +51,12 @@ bool udp_client::find_server()
 	return true;
 }
 
-void udp_client::end_session()
+void calculator_client::end_session()
 {
 	send_message(text_protocol(utils::get_current_time(), session_id, text_protocol::op_end));
 }
 
-list<text_protocol> udp_client::calculate(const string& arg1,const string& arg2, const text_protocol::operation_enum& operation)
+list<text_protocol> calculator_client::calculate(const string& arg1,const string& arg2, const text_protocol::operation_enum& operation)
 {
 	list<text_protocol> messages;
 	messages.emplace_back(text_protocol(utils::get_current_time(), session_id, operation));
@@ -88,7 +88,7 @@ list<text_protocol> udp_client::calculate(const string& arg1,const string& arg2,
 	return result_filtered;
 }
 
-std::list<text_protocol> udp_client::get_history_by_session_id()
+std::list<text_protocol> calculator_client::get_history_by_session_id()
 {
 	send_message(text_protocol(utils::get_current_time(), session_id, text_protocol::op_history_whole));
 
@@ -108,7 +108,7 @@ std::list<text_protocol> udp_client::get_history_by_session_id()
 	return history_filtered;
 }
 
-list<text_protocol> udp_client::get_history_by_calculation_id(const unsigned& calculation_id)
+list<text_protocol> calculator_client::get_history_by_calculation_id(const unsigned& calculation_id)
 {
 	list<text_protocol> messages;
 	messages.emplace_back(text_protocol(utils::get_current_time(), session_id, text_protocol::op_history_id));

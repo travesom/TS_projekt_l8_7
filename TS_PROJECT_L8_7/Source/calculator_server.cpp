@@ -7,7 +7,7 @@
 
 using namespace std;
 
-map<text_protocol::operation_enum, bool (*)(const double&, const double&, double&)> udp_server::operations_map_{
+map<text_protocol::operation_enum, bool (*)(const double&, const double&, double&)> calculator_server::operations_map_{
 	{text_protocol::op_add, &add},
 	{text_protocol::op_subt, &subtract},
 	{text_protocol::op_multp, &multiply},
@@ -15,7 +15,7 @@ map<text_protocol::operation_enum, bool (*)(const double&, const double&, double
 	{text_protocol::op_fact, &factorial}
 };
 
-udp_server::udp_server(const unsigned short& port): udp_node("0.0.0.0", port), port_(htons(port))
+calculator_server::calculator_server(const unsigned short& port): udp_node("0.0.0.0", port), port_(htons(port))
 {
 	print_messages_ = true;
 	print_errors_ = false;
@@ -23,13 +23,13 @@ udp_server::udp_server(const unsigned short& port): udp_node("0.0.0.0", port), p
 	set_receive_timeout(recv_timeout);
 }
 
-bool udp_server::start_session()
+bool calculator_server::start_session()
 {
 	bind_to_address("0.0.0.0");
 	return listen_for_client();
 }
 
-bool udp_server::bind_to_address(const string& address)
+bool calculator_server::bind_to_address(const string& address)
 {
 	server_addr_.sin_addr.s_addr = inet_addr(address.c_str());
 	server_addr_.sin_port = port_;
@@ -52,7 +52,7 @@ bool udp_server::bind_to_address(const string& address)
 	return true;
 }
 
-bool udp_server::wait_for_op_begin(unsigned& session_id)
+bool calculator_server::wait_for_op_begin(unsigned& session_id)
 {
 	string received;
 	int8_t fail_count = 0;
@@ -84,7 +84,7 @@ bool udp_server::wait_for_op_begin(unsigned& session_id)
 	return false;
 }
 
-bool udp_server::wait_for_op_ack(const unsigned& session_id)
+bool calculator_server::wait_for_op_ack(const unsigned& session_id)
 {
 	int8_t fail_count = 0;
 	while (true)
@@ -112,7 +112,7 @@ bool udp_server::wait_for_op_ack(const unsigned& session_id)
 	}
 }
 
-unsigned udp_server::calculate_session_id(const unsigned& client_session_id)
+unsigned calculator_server::calculate_session_id(const unsigned& client_session_id)
 {
 	unsigned session_id = client_session_id;
 
@@ -129,7 +129,7 @@ unsigned udp_server::calculate_session_id(const unsigned& client_session_id)
 	return session_id;
 }
 
-bool udp_server::listen_for_client()
+bool calculator_server::listen_for_client()
 {
 	s_cout << "\nListening for clients.\n";
 	unsigned client_session_id;
@@ -143,7 +143,7 @@ bool udp_server::listen_for_client()
 	return wait_for_op_ack(session_id);
 }
 
-bool udp_server::add(const double& argument1, const double& argument2, double& result)
+bool calculator_server::add(const double& argument1, const double& argument2, double& result)
 {
 	const double temp_result = argument1 + argument2;
 	if (temp_result > 2147483647.0 || temp_result < -2147483647.0) { return false; }
@@ -151,7 +151,7 @@ bool udp_server::add(const double& argument1, const double& argument2, double& r
 	return true;
 }
 
-bool udp_server::subtract(const double& argument1, const double& argument2, double& result)
+bool calculator_server::subtract(const double& argument1, const double& argument2, double& result)
 {
 	const double temp_result = argument1 - argument2;
 	if (temp_result > 2147483647.0 || temp_result < -2147483647.0) { return false; }
@@ -159,7 +159,7 @@ bool udp_server::subtract(const double& argument1, const double& argument2, doub
 	return true;
 }
 
-bool udp_server::multiply(const double& argument1, const double& argument2, double& result)
+bool calculator_server::multiply(const double& argument1, const double& argument2, double& result)
 {
 	double temp_result = 0;
 	for (int i = abs(int(argument2)); i > 0; i--)
@@ -171,14 +171,14 @@ bool udp_server::multiply(const double& argument1, const double& argument2, doub
 	return true;
 }
 
-bool udp_server::divide(const double& argument1, const double& argument2, double& result)
+bool calculator_server::divide(const double& argument1, const double& argument2, double& result)
 {
 	result = double(argument1) / double(argument2);
 	result = round(result * 10000) / 10000;
 	return true;
 }
 
-bool udp_server::factorial(const double& argument1, const double& ignored, double& result)
+bool calculator_server::factorial(const double& argument1, const double& ignored, double& result)
 {
 	if (argument1 == 0)
 	{
@@ -197,7 +197,7 @@ bool udp_server::factorial(const double& argument1, const double& ignored, doubl
 	return true;
 }
 
-void udp_server::calculation(bool (* calc_function)(const double&, const double&, double&), const unsigned& session_id)
+void calculator_server::calculation(bool (* calc_function)(const double&, const double&, double&), const unsigned& session_id)
 {
 	const list<text_protocol> received_messages = receive_messages();
 
@@ -246,7 +246,7 @@ void udp_server::calculation(bool (* calc_function)(const double&, const double&
 	send_messages(result_messages);
 }
 
-list<text_protocol> udp_server::get_history_by_session_id(const unsigned& session_id)
+list<text_protocol> calculator_server::get_history_by_session_id(const unsigned& session_id)
 {
 	list<text_protocol> result;
 	for (const auto& elem : history_)
@@ -257,7 +257,7 @@ list<text_protocol> udp_server::get_history_by_session_id(const unsigned& sessio
 	return result;
 }
 
-void udp_server::history_by_session_id(const unsigned& session_id)
+void calculator_server::history_by_session_id(const unsigned& session_id)
 {
 	list<text_protocol> session_history = get_history_by_session_id(session_id);
 
@@ -273,7 +273,7 @@ void udp_server::history_by_session_id(const unsigned& session_id)
 	send_messages(session_history);
 }
 
-void udp_server::history_by_calc_id(const unsigned& session_id, const unsigned& calc_id)
+void calculator_server::history_by_calc_id(const unsigned& session_id, const unsigned& calc_id)
 {
 	if (history_.find(calc_id) == history_.end())
 	{
@@ -301,7 +301,7 @@ void udp_server::history_by_calc_id(const unsigned& session_id, const unsigned& 
 	}
 }
 
-bool udp_server::handle_session()
+bool calculator_server::handle_session()
 {
 	string received;
 	while (true)

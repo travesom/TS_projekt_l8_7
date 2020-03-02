@@ -4,7 +4,7 @@
 class client_gui
 {
 private:
-	udp_client client_;
+	calculator_client client_;
 	std::string session_id_info_;
 	static const std::string action_choice_text;
 	static const std::string enter_arguments_text;

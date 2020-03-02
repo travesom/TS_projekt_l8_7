@@ -5,16 +5,16 @@
 
 #include <array>
 
-class udp_client : public udp_node
+class calculator_client : public udp_node
 {
 public:
 	unsigned session_id = 0;
 
-	udp_client();
+	calculator_client();
 
-	explicit udp_client(const std::string& address, const unsigned short& port);
+	explicit calculator_client(const std::string& address, const unsigned short& port);
 
-	~udp_client();
+	~calculator_client();
 
 	bool find_server();
 

@@ -7,7 +7,7 @@
 #include <map>
 #include <set>
 
-class udp_server : public udp_node
+class calculator_server : public udp_node
 {
 private:
 	unsigned calculation_id_ = 1;
@@ -20,7 +20,7 @@ private:
 
 
 public:
-	explicit udp_server(const unsigned short& port);
+	explicit calculator_server(const unsigned short& port);
 
 	bool start_session();
 
